@@ -1,0 +1,23 @@
+# Ambiente local — o container instala as próprias dependências
+.venv/
+**/__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Artefatos: vêm por bind mount do compose, não precisam entrar na imagem
+models/
+reports/
+data/processed/
+
+# O CSV solto na raiz é duplicata de data/raw/ (é de lá que o código lê)
+petrochemical_advanced_data.csv
+Aula_Econometria_e_Otimização_Linear.ipynb
+
+# Documentação e metadados
+*.md
+!README.md
+.git/
+.gitignore
+.vscode/
+.idea/
+.claude/

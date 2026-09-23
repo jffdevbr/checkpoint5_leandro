@@ -1,0 +1,37 @@
+# --- Núcleo de dados ---
+pandas
+numpy
+pyarrow
+
+# --- Visualização ---
+matplotlib
+seaborn
+plotly
+
+# --- Machine Learning ---
+scikit-learn
+xgboost
+lightgbm
+statsmodels
+shap
+
+# --- Otimização ---
+scipy
+pulp
+
+# --- Persistência de modelo ---
+joblib
+
+# --- Notebook ---
+jupyter
+jupyterlab
+ipykernel
+ipywidgets
+nbformat
+
+# --- API / Web ---
+fastapi
+uvicorn[standard]
+pydantic
+jinja2
+python-multipart

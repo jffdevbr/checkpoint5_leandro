@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipeline Petroquímico</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+
+<header>
+  <h1>Dados → ML → Otimização → Cenários → Decisão</h1>
+  <span class="sub">Complexo Petroquímico · Checkpoint 5</span>
+  <nav>
+    <a href="/" class="active">Visão geral</a>
+    <a href="/operacao">Operação</a>
+    <a href="/manutencao">Manutenção</a>
+    <a href="/docs">API</a>
+  </nav>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>As duas perguntas</h2>
+    <p class="hint">O trabalho inteiro existe para responder estas duas frases.</p>
+    <div class="grid cols-2">
+      <div class="kpi">
+        <div class="k">Pergunta 1 — Operação</div>
+        <div style="margin-top:6px">Qual configuração operacional reduz o custo/intensidade energética <b>mantendo</b> a produção e as restrições?</div>
+        <p style="margin:10px 0 0"><a href="/operacao">Ir para o simulador →</a></p>
+      </div>
+      <div class="kpi">
+        <div class="k">Pergunta 2 — Manutenção</div>
+        <div style="margin-top:6px">Devemos realizar manutenção? Essa decisão <b>poderia ser automatizada</b>?</div>
+        <p style="margin:10px 0 0"><a href="/manutencao">Ir para a decisão →</a></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Pipeline</h2>
+    <p class="hint">A seta de volta é o ponto central: a decisão de manutenção muda o estado do equipamento, que muda o modelo, que muda a operação ótima.</p>
+<pre class="flow">
+  petrochemical_advanced_data.csv
+            │
+            ▼   EDA · Feature Engineering
+            │
+            ▼   ⚠ Checagem de LEAKAGE  →  remove Electricity / Gas / Steam
+            │
+    ┌───────┴────────┐
+    │                │
+ Modelo Energia   Modelo Yield          (2 candidatos cada)
+    │                │
+    └───────┬────────┘
+            ▼   surrogates  Ê(x,s,e) · Ŷ(x,s,e)
+            │
+            ▼   OTIMIZAÇÃO   min custo   s.a.  Ŷ ≥ Y_min ,  x ∈ [lb, ub]
+            │
+            ▼   CENÁRIOS  S1 sem manutenção · S2 imediata · S3 postergada
+            │                              │
+            ▼   custo esperado = operação + P(falha)·custo_falha + manutenção
+            │                              │
+            ▼   RECOMENDAÇÃO ──────────────┘ (muda o estado s e realimenta)
+            │
+            ▼   GATE DE CONFIANÇA
+                 ├── confiável  →  L2 executa automaticamente
+                 └── suspeito   →  L1 / L0 humano aprova
+</pre>
+  </div>
+
+  <div class="card">
+    <h2>Achado que sustenta o trabalho: target leakage confirmado</h2>
+    <p class="hint">Verificado nos dados, não assumido.</p>
+    <p>
+      <code>Energy_Intensity = (3,6 · Electricity_MWh + 0,035 · Natural_Gas_m3h) / Product_Yield_Tons</code>
+      com <b>R² = 1,000000</b>.
+    </p>
+    <div class="note">
+      As colunas de consumo não são features — são o próprio target reescrito. Um modelo que as usa acerta quase 100 %
+      e é <b>inútil para otimizar</b>: para prever a energia de uma configuração nova, seria preciso já saber
+      quanta energia ela consumiu. Por isso <code>Electricity_MWh</code>, <code>Natural_Gas_m3h</code> e
+      <code>Steam_Tons_h</code> ficam fora do pipeline.
+      <ul>
+        <li><b>Leakage secundário:</b> <code>Product_Yield_Tons</code> é o denominador do target de energia —
+        usá-lo como feature cria dependência circular entre os dois modelos dentro do otimizador.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Segundo achado: a alavanca real não é o setpoint</h2>
+    <p class="hint">Também verificado nos dados.</p>
+    <p><code>Product_Yield_Tons = 0,18 · Feedstock_Flow_m3h · Sensor_Health_Index</code> com <b>R² = 1,000000</b>.</p>
+    <div class="note">
+      <b>Reactor Temperature, Reactor Pressure e Valve Opening têm correlação ≈ 0 com os dois targets</b> —
+      e continuam ≈ 0 dentro de cada unidade, então não é paradoxo de Simpson. A única variável operacional
+      com efeito é a vazão de carga; e <code>Sensor_Health_Index</code> multiplica a produção diretamente.
+      <ul>
+        <li>Consequência: <b>a condição do equipamento domina o resultado</b>. Recuperá-la via manutenção
+        vale mais do que qualquer ajuste de setpoint — é isso que torna a Pergunta 2 a decisão central.</li>
+        <li>Consequência: o ótimo é <b>degenerado</b> — temperatura, pressão e válvula são indiferentes dentro
+        da faixa. Apresentá-los como “recomendação” seria falso; o critério de desempate usado é a menor
+        perturbação em relação à operação atual.</li>
+        <li>Ressalva honesta: o dataset é sintético. Numa planta real esses setpoints <i>teriam</i> efeito —
+        a ausência aqui é limitação dos dados, não conclusão de engenharia.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Status dos modelos</h2>
+    <div id="status" class="hint">verificando…</div>
+    <div id="premissas"></div>
+  </div>
+
+</main>
+
+<script type="module">
+import { api, brl, fmt } from "/static/app.js";
+
+const status = document.getElementById("status");
+const prem = document.getElementById("premissas");
+
+try {
+  const h = await api("/api/health");
+  if (!h.modelos_treinados) {
+    status.innerHTML = `<div class="note">Modelos ainda não treinados. Rode a <b>seção 12</b> do notebook
+      <code>notebooks/01_pipeline_completo.ipynb</code> para gerar <code>models/*.pkl</code>.
+      As páginas de Operação e Manutenção já funcionam assim que os arquivos existirem.</div>`;
+  } else {
+    const m = await api("/api/metadata");
+    status.innerHTML = `<span class="badge ok">modelos carregados</span>`;
+    const p = m.premissas || {};
+    prem.innerHTML = `<h2 style="margin-top:22px">Premissas econômicas</h2>
+      <p class="hint">Não vêm do dataset. Toda conclusão em R$ depende delas — por isso ficam visíveis aqui.</p>
+      <div class="kpis">
+        <div class="kpi"><div class="k">Preço do produto</div><div class="v">${brl(p.preco_produto_ton)}/t</div></div>
+        <div class="kpi"><div class="k">Custo energia (fator)</div><div class="v">${fmt(p.custo_energia_unidade)}</div></div>
+        <div class="kpi"><div class="k">Manutenção programada</div><div class="v">${brl(p.custo_manutencao)}</div></div>
+        <div class="kpi"><div class="k">Falha não programada</div><div class="v">${brl(p.custo_falha)}</div></div>
+        <div class="kpi"><div class="k">Produção mínima</div><div class="v">${fmt(p.producao_minima, 1)} t</div></div>
+      </div>`;
+    const mets = m.metricas_modelos || [];
+    if (mets.length) {
+      prem.innerHTML += `<h2 style="margin-top:26px">Comparação de modelos</h2>
+        <table><thead><tr><th>Target</th><th>Modelo</th><th class="num">R²</th><th class="num">RMSE</th><th class="num">MAE</th><th class="num">MAPE %</th></tr></thead><tbody>
+        ${mets.map(r => `<tr><td>${r.Target}</td><td>${r.Modelo}</td>
+          <td class="num">${fmt(r.R2, 4)}</td><td class="num">${fmt(r.RMSE, 4)}</td>
+          <td class="num">${fmt(r.MAE, 4)}</td><td class="num">${fmt(r["MAPE_%"], 2)}</td></tr>`).join("")}
+        </tbody></table>`;
+    }
+  }
+} catch (e) {
+  status.innerHTML = `<div class="note bad">${e.message}</div>`;
+}
+</script>
+</body>
+</html>

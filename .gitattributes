@@ -1,0 +1,5 @@
+# Scripts executados dentro do container precisam de LF — CRLF quebra o shebang
+# com "no such file or directory", que é um erro confuso de diagnosticar.
+*.sh text eol=lf
+docker/entrypoint.sh text eol=lf
+Dockerfile text eol=lf

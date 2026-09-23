@@ -1,0 +1,58 @@
+# Dois serviços, uma imagem:
+#   api      -> http://127.0.0.1:8000   (páginas + endpoints do modelo)
+#   jupyter  -> http://127.0.0.1:8888   (notebook do pipeline)
+#
+#   docker compose up --build          sobe os dois
+#   docker compose up api              sobe só a API
+#   docker compose down                derruba
+#
+# models/ é montado nos dois: o que o notebook treina na seção 12 é
+# imediatamente o que a API passa a servir, sem rebuild.
+
+services:
+  api:
+    build: .
+    image: checkpoint5:latest
+    container_name: checkpoint5-api
+    # 127.0.0.1 de propósito: não expõe a aplicação na rede local.
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      BOOTSTRAP_MODELS: "1"   # treina baseline se models/ estiver vazio
+    volumes:
+      - ./src:/code/src
+      - ./app:/code/app
+      - ./scripts:/code/scripts
+      - ./models:/code/models
+      - ./data:/code/data
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0 --port 8000
+      --reload --reload-dir /code/app --reload-dir /code/src
+    restart: unless-stopped
+
+  jupyter:
+    build: .
+    image: checkpoint5:latest
+    container_name: checkpoint5-jupyter
+    ports:
+      - "127.0.0.1:8888:8888"
+    volumes:
+      - ./notebooks:/code/notebooks
+      - ./src:/code/src
+      - ./scripts:/code/scripts
+      - ./models:/code/models
+      - ./data:/code/data
+      - ./reports:/code/reports
+    working_dir: /code/notebooks
+    # Sem token porque a porta só escuta em 127.0.0.1. Se você mudar o
+    # mapeamento de porta acima, reative o token.
+    command: >
+      jupyter lab
+      --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+      --IdentityProvider.token=''
+      --ServerApp.root_dir=/code
+    # O HEALTHCHECK da imagem checa a porta 8000, que este serviço não expõe.
+    healthcheck:
+      disable: true
+    restart: unless-stopped

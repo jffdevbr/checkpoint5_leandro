@@ -1,0 +1,81 @@
+{
+  "features": [
+    "Feedstock_Flow_m3h",
+    "Reactor_Temp_C",
+    "Reactor_Pressure_Bar",
+    "Valve_Opening_Percent",
+    "Catalyst_Age_Days",
+    "Sensor_Health_Index",
+    "Vibration_Level_mm_s",
+    "Ambient_Temp_C",
+    "Delta_Temp",
+    "Severidade",
+    "Carga_por_Abertura",
+    "Idade_Norm"
+  ],
+  "bounds": {
+    "Feedstock_Flow_m3h": [
+      451.92020873722953,
+      648.8081636914903
+    ],
+    "Reactor_Temp_C": [
+      753.1168329504019,
+      886.6604239949573
+    ],
+    "Reactor_Pressure_Bar": [
+      27.11012069807183,
+      36.942314180786596
+    ],
+    "Valve_Opening_Percent": [
+      24.100324175569984,
+      91.33704478923043
+    ]
+  },
+  "contexto_default": {
+    "Catalyst_Age_Days": 127.5,
+    "Sensor_Health_Index": 0.8476000444637364,
+    "Vibration_Level_mm_s": 5.1189808684814375,
+    "Ambient_Temp_C": 17.532885997508522
+  },
+  "metricas": [
+    {
+      "Target": "Energy_Intensity",
+      "Modelo": "Ridge",
+      "R2": 0.6772050460054588,
+      "RMSE": 0.3487483040258428,
+      "MAE": 0.2827919634003465,
+      "MAPE_%": 9.97792812361388
+    },
+    {
+      "Target": "Energy_Intensity",
+      "Modelo": "GradientBoosting",
+      "R2": 0.683710251738515,
+      "RMSE": 0.34521630001633885,
+      "MAE": 0.27929016785629035,
+      "MAPE_%": 9.805822332222927
+    },
+    {
+      "Target": "Product_Yield_Tons",
+      "Modelo": "Ridge",
+      "R2": 0.9924925730428051,
+      "RMSE": 1.1880441397203154,
+      "MAE": 0.8054381575711418,
+      "MAPE_%": 1.0671805591078698
+    },
+    {
+      "Target": "Product_Yield_Tons",
+      "Modelo": "GradientBoosting",
+      "R2": 0.9983261395106175,
+      "RMSE": 0.5609790566100854,
+      "MAE": 0.443574790056576,
+      "MAPE_%": 0.5737106905483037
+    }
+  ],
+  "premissas": {
+    "preco_produto_ton": 2800.0,
+    "custo_energia_unidade": 80.74,
+    "custo_manutencao": 120000.0,
+    "custo_falha": 800000.0,
+    "producao_minima": 80.0
+  }
+}

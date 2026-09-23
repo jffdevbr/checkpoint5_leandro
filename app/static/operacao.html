@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decisão de Operação</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+
+<header>
+  <h1>Decisão de Operação</h1>
+  <span class="sub">endpoint do modelo + otimizador</span>
+  <nav>
+    <a href="/">Visão geral</a>
+    <a href="/operacao" class="active">Operação</a>
+    <a href="/manutencao">Manutenção</a>
+    <a href="/docs">API</a>
+  </nav>
+</header>
+
+<main>
+<div class="grid cols-2">
+
+  <div class="card">
+    <h2>Setpoints (variáveis de decisão)</h2>
+    <p class="hint">O que o operador consegue ajustar. Mexa e veja a previsão do modelo em tempo real.</p>
+
+    <div class="control"><label>Feedstock Flow (m³/h) <b id="flow-val"></b></label>
+      <input type="range" id="flow" min="420" max="680" step="1" value="550"></div>
+    <div class="control"><label>Reactor Temperature (°C) <b id="temp-val"></b></label>
+      <input type="range" id="temp" min="740" max="900" step="1" value="819"></div>
+    <div class="control"><label>Reactor Pressure (bar) <b id="pres-val"></b></label>
+      <input type="range" id="pres" min="26" max="38" step="0.1" value="32"></div>
+    <div class="control"><label>Valve Opening (%) <b id="valve-val"></b></label>
+      <input type="range" id="valve" min="20" max="95" step="0.5" value="57.7"></div>
+
+    <h2 style="margin-top:22px">Contexto (estado + externas)</h2>
+    <p class="hint">Não é escolhido agora — é o estado do ativo e o ambiente. A manutenção é o que muda o estado.</p>
+
+    <div class="control"><label>Catalyst Age (dias) <b id="age-val"></b></label>
+      <input type="range" id="age" min="0" max="400" step="1" value="180"></div>
+    <div class="control"><label>Sensor Health Index <b id="health-val"></b></label>
+      <input type="range" id="health" min="0.3" max="1" step="0.01" value="0.85"></div>
+    <div class="control"><label>Vibration (mm/s) <b id="vib-val"></b></label>
+      <input type="range" id="vib" min="0" max="10" step="0.1" value="4.5"></div>
+    <div class="control"><label>Ambient Temp (°C) <b id="amb-val"></b></label>
+      <input type="range" id="amb" min="-20" max="45" step="1" value="20"></div>
+
+    <div style="display:flex; gap:10px; margin-top:18px">
+      <button id="otimizar">Otimizar operação</button>
+      <button id="reset" class="ghost">Voltar à média histórica</button>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <h2>Previsão do modelo</h2>
+      <p class="hint">POST <code>/api/predict</code></p>
+      <div class="kpis" id="kpis"></div>
+      <div id="erro"></div>
+    </div>
+
+    <div class="card">
+      <h2>Configuração ótima</h2>
+      <p class="hint">POST <code>/api/optimize</code> — minimiza custo sujeito a produção ≥ mínima e setpoints na faixa de treino.</p>
+      <div id="otimo" class="hint">clique em “Otimizar operação”.</div>
+    </div>
+  </div>
+
+</div>
+</main>
+
+<script type="module">
+import { api, fmt, brl, slider, lerContexto, mostrarErro, badgeNivel } from "/static/app.js";
+
+const S = {
+  flow: slider("flow", 0), temp: slider("temp", 0), pres: slider("pres", 1), valve: slider("valve", 1),
+  age: slider("age", 0), health: slider("health", 2), vib: slider("vib", 1), amb: slider("amb", 0),
+};
+const kpis = document.getElementById("kpis");
+const erro = document.getElementById("erro");
+
+const setpoints = () => ({
+  Feedstock_Flow_m3h: +S.flow.value,
+  Reactor_Temp_C: +S.temp.value,
+  Reactor_Pressure_Bar: +S.pres.value,
+  Valve_Opening_Percent: +S.valve.value,
+});
+
+let timer;
+async function prever() {
+  clearTimeout(timer);
+  timer = setTimeout(async () => {
+    try {
+      const r = await api("/api/predict", { setpoints: setpoints(), contexto: lerContexto() });
+      erro.innerHTML = "";
+      kpis.innerHTML = `
+        <div class="kpi"><div class="k">Energy Intensity</div><div class="v">${fmt(r.energy_intensity, 3)}</div></div>
+        <div class="kpi"><div class="k">Produção</div><div class="v">${fmt(r.producao_ton, 1)} t</div></div>
+        <div class="kpi"><div class="k">Custo energia</div><div class="v">${brl(r.custo_energia)}</div></div>
+        <div class="kpi"><div class="k">Margem</div><div class="v">${brl(r.margem)}</div></div>`;
+    } catch (e) { kpis.innerHTML = ""; mostrarErro(erro, e); }
+  }, 120);
+}
+
+Object.values(S).forEach(el => el.addEventListener("input", prever));
+prever();
+
+document.getElementById("reset").onclick = () => {
+  const med = { flow: 550, temp: 819, pres: 32, valve: 57.7, age: 180, health: 0.85, vib: 4.5, amb: 20 };
+  for (const [k, v] of Object.entries(med)) { S[k].value = v; S[k].dispatchEvent(new Event("input")); }
+};
+
+document.getElementById("otimizar").onclick = async (ev) => {
+  const box = document.getElementById("otimo");
+  ev.target.disabled = true;
+  box.innerHTML = "otimizando…";
+  try {
+    const r = await api("/api/optimize", { contexto: lerContexto() });
+    const a = r.automacao;
+    box.innerHTML = `
+      <table><tbody>
+        ${Object.entries(r.setpoints).map(([k, v]) =>
+          `<tr><td>${k}</td><td class="num">${fmt(v, 2)}</td></tr>`).join("")}
+        <tr><td><b>Produção prevista</b></td><td class="num"><b>${fmt(r.producao_ton, 2)} t</b></td></tr>
+        <tr><td><b>Energy Intensity</b></td><td class="num"><b>${fmt(r.energy_intensity, 3)}</b></td></tr>
+        <tr><td><b>Custo de energia</b></td><td class="num"><b>${brl(r.custo_energia)}</b></td></tr>
+        <tr><td><b>Margem</b></td><td class="num"><b>${brl(r.margem)}</b></td></tr>
+      </tbody></table>
+      <p style="margin-top:14px">Restrição de produção:
+        <span class="badge ${r.restricao_producao_atendida ? "ok" : "bad"}">
+          ${r.restricao_producao_atendida ? "atendida" : "violada"}</span>
+        &nbsp;·&nbsp; Automação: ${badgeNivel(a.nivel)} <span class="hint">${a.descricao}</span></p>
+      ${a.motivos.length ? `<div class="note" style="margin-top:10px"><b>Por que não pode ser automático:</b>
+        <ul>${a.motivos.map(m => `<li>${m}</li>`).join("")}</ul></div>` : ""}
+      <p style="margin-top:10px"><button class="ghost" id="aplicar">Aplicar nos sliders</button></p>`;
+    document.getElementById("aplicar").onclick = () => {
+      const map = { Feedstock_Flow_m3h: "flow", Reactor_Temp_C: "temp", Reactor_Pressure_Bar: "pres", Valve_Opening_Percent: "valve" };
+      for (const [k, v] of Object.entries(r.setpoints)) { S[map[k]].value = v; S[map[k]].dispatchEvent(new Event("input")); }
+    };
+  } catch (e) { mostrarErro(box, e); }
+  ev.target.disabled = false;
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decisão de Manutenção</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+
+<header>
+  <h1>Decisão de Manutenção</h1>
+  <span class="sub">cenários · risco · nível de automação</span>
+  <nav>
+    <a href="/">Visão geral</a>
+    <a href="/operacao">Operação</a>
+    <a href="/manutencao" class="active">Manutenção</a>
+    <a href="/docs">API</a>
+  </nav>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>Estado do equipamento agora</h2>
+    <p class="hint">Cada cenário re-otimiza a operação com o estado que ele implica — é isso que acopla manutenção e operação.</p>
+    <div class="grid cols-2">
+      <div>
+        <div class="control"><label>Catalyst Age (dias) <b id="age-val"></b></label>
+          <input type="range" id="age" min="0" max="400" step="1" value="300"></div>
+        <div class="control"><label>Sensor Health Index <b id="health-val"></b></label>
+          <input type="range" id="health" min="0.3" max="1" step="0.01" value="0.78"></div>
+      </div>
+      <div>
+        <div class="control"><label>Vibration (mm/s) <b id="vib-val"></b></label>
+          <input type="range" id="vib" min="0" max="10" step="0.1" value="5.8"></div>
+        <div class="control"><label>Ambient Temp (°C) <b id="amb-val"></b></label>
+          <input type="range" id="amb" min="-20" max="45" step="1" value="20"></div>
+        <div class="control"><label>Postergação avaliada em S3 (dias) <b id="dias-val"></b></label>
+          <input type="range" id="dias" min="0" max="120" step="1" value="30"></div>
+      </div>
+    </div>
+    <button id="avaliar">Avaliar cenários</button>
+  </div>
+
+  <div id="saida"></div>
+
+</main>
+
+<script type="module">
+import { api, fmt, brl, slider, lerContexto, mostrarErro, badgeNivel } from "/static/app.js";
+
+["age", "health", "vib", "amb"].forEach((id, i) => slider(id, [0, 2, 1, 0][i]));
+slider("dias", 0);
+
+const saida = document.getElementById("saida");
+
+document.getElementById("avaliar").onclick = async (ev) => {
+  ev.target.disabled = true;
+  saida.innerHTML = `<div class="card hint">avaliando cenários…</div>`;
+  try {
+    const r = await api("/api/maintenance", {
+      contexto: lerContexto(),
+      dias_postergacao: +document.getElementById("dias").value,
+    });
+    const rec = r.recomendacao, a = r.automacao;
+    const melhor = rec.cenario_escolhido;
+
+    const linhas = r.cenarios.map(c => `
+      <tr class="${c.cenario === melhor ? "best" : ""}">
+        <td>${c.cenario}${c.cenario === melhor ? ' <span class="badge ok">escolhido</span>' : ""}</td>
+        <td class="num">${fmt(c.producao_ton, 1)}</td>
+        <td class="num">${fmt(c.energy_intensity, 3)}</td>
+        <td class="num">${brl(c.custo_energia)}</td>
+        <td class="num">${fmt(c.condicao_equipamento.vibracao, 1)} / ${fmt(c.condicao_equipamento.idade_catalisador, 0)}d</td>
+        <td class="num">${fmt(c.prob_falha * 100, 1)} %</td>
+        <td class="num">${brl(c.custo_esperado_falha)}</td>
+        <td class="num">${brl(c.custo_manutencao)}</td>
+        <td class="num"><b>${brl(c.resultado_liquido)}</b></td>
+      </tr>`).join("");
+
+    saida.innerHTML = `
+      <div class="card">
+        <h2>Recomendação</h2>
+        <div class="kpis">
+          <div class="kpi"><div class="k">Realizar manutenção?</div>
+            <div class="v">${rec.realizar_manutencao ? "SIM" : "NÃO"}</div></div>
+          <div class="kpi"><div class="k">Cenário</div><div class="v" style="font-size:16px">${melhor}</div></div>
+          <div class="kpi"><div class="k">Ganho vs. S1</div><div class="v">${brl(rec.ganho_vs_sem_manutencao)}</div></div>
+          <div class="kpi"><div class="k">Automação</div><div class="v">${badgeNivel(a.nivel)}</div></div>
+        </div>
+        <p class="hint" style="margin-top:14px">${a.descricao}</p>
+        ${a.motivos.length
+          ? `<div class="note bad"><b>Decisão rebaixada para aprovação humana:</b>
+             <ul>${a.motivos.map(m => `<li>${m}</li>`).join("")}</ul></div>`
+          : `<div class="note"><b>Nenhum gate acionado</b> — o modelo está operando dentro da faixa em que foi
+             treinado e com sensores confiáveis, então a execução automática é defensável neste ponto.</div>`}
+      </div>
+
+      <div class="card">
+        <h2>Comparação de cenários</h2>
+        <p class="hint">Resultado líquido = margem no horizonte − custo de manutenção − custo esperado de falha.</p>
+        <table>
+          <thead><tr>
+            <th>Cenário</th><th class="num">Produção (t)</th><th class="num">Energy Int.</th>
+            <th class="num">Custo energia</th><th class="num">Vib. / Idade</th><th class="num">P(falha)</th>
+            <th class="num">Custo risco</th><th class="num">Manutenção</th><th class="num">Líquido</th>
+          </tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+        <p class="hint" style="margin-top:14px">
+          Premissas: manutenção programada ${brl(r.premissas.custo_manutencao_programada)} ·
+          falha não programada ${brl(r.premissas.custo_falha_nao_programada)} ·
+          horizonte ${r.premissas.horizonte_h} h.
+          A razão entre os dois custos é o que faz o limiar ótimo de decisão <b>não</b> ser 0,5.
+        </p>
+      </div>`;
+  } catch (e) {
+    saida.innerHTML = `<div class="card"></div>`;
+    mostrarErro(saida.firstElementChild, e);
+  }
+  ev.target.disabled = false;
+};
+</script>
+</body>
+</html>
