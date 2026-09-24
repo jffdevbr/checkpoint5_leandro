@@ -45,7 +45,7 @@ Detalhes em [01_entendimento_negocio.md](01_entendimento_negocio.md) e [02_dicio
 
 **Achado central da EDA:** as linhas são independentes (autocorrelação ≈ 0), então o problema é de **regressão**, não de série temporal. Os testes de hipótese mostraram que:
 
-- **só a vazão** move os targets; temperatura, pressão e válvula não têm efeito (H5);
+- das variáveis controláveis, **só a vazão de matéria-prima** (`Feedstock_Flow_m3h`, quantos m³/h de insumo entram no reator) altera produção e energia. Temperatura, pressão e válvula não mostraram efeito nos dados (H5);
 - a vibração acima de **6,5 mm/s** derruba o Health de ~0,85 para ~0,68 (H1), o que corta ~20% da produção;
 - cada dia de idade do catalisador soma 0,5 m³/h de gás (H2).
 
@@ -83,7 +83,7 @@ O HGB continua no pipeline como **verificação cruzada**. Se os dois modelos di
 
 ## 3. Otimização
 
-- **Variável de decisão:** a vazão `F`. T, P e válvula ficam fixas no valor atual, porque não têm efeito.
+- **Variável de decisão:** a vazão de matéria-prima `F` (`Feedstock_Flow_m3h`). T, P e válvula ficam fixas no valor atual: como não mostraram efeito nos dados (H5), qualquer valor dentro da faixa dá o mesmo resultado. Numa planta real, temperatura e pressão afetam a reação, então essa é uma característica deste dataset e não uma regra geral.
 - **Função objetivo** (margem por janela de 4 h):
 
 ```
