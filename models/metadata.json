@@ -1,18 +1,105 @@
 {
+  "gerado_em": "2026-09-23T23:42:40",
   "features": [
+    "log_Flow",
+    "log_Health",
+    "Catalyst_Age_Days",
+    "Vib_Degradado",
     "Feedstock_Flow_m3h",
     "Reactor_Temp_C",
     "Reactor_Pressure_Bar",
     "Valve_Opening_Percent",
-    "Catalyst_Age_Days",
     "Sensor_Health_Index",
     "Vibration_Level_mm_s",
-    "Ambient_Temp_C",
-    "Delta_Temp",
-    "Severidade",
-    "Carga_por_Abertura",
-    "Idade_Norm"
+    "Ambient_Temp_C"
   ],
+  "features_por_modelo": {
+    "energia": [
+      "log_Flow",
+      "log_Health",
+      "Catalyst_Age_Days"
+    ],
+    "yield": [
+      "log_Flow",
+      "log_Health"
+    ],
+    "health": [
+      "Vib_Degradado"
+    ],
+    "yield_sem_health": [
+      "log_Flow",
+      "Vib_Degradado"
+    ],
+    "hgb": [
+      "Feedstock_Flow_m3h",
+      "Reactor_Temp_C",
+      "Reactor_Pressure_Bar",
+      "Valve_Opening_Percent",
+      "Catalyst_Age_Days",
+      "Sensor_Health_Index",
+      "Vibration_Level_mm_s",
+      "Ambient_Temp_C"
+    ]
+  },
+  "catalogo_features": [
+    {
+      "feature": "log_Flow",
+      "modelo": "Energia, Yield",
+      "tipo": "decisão",
+      "justificativa": "Única alavanca operacional; no log-log o coeficiente é a elasticidade direta (≈ −1 em EI, +1 em Yield).",
+      "corr_max": 0.01,
+      "VIF": 1.0,
+      "risco_leakage": "nenhum — conhecida antes da produção"
+    },
+    {
+      "feature": "log_Health",
+      "modelo": "Energia, Yield",
+      "tipo": "estado",
+      "justificativa": "Fator de eficiência que multiplica a produção; confundidor que precisa ser controlado para isolar o efeito da vazão.",
+      "corr_max": 0.003,
+      "VIF": 1.0,
+      "risco_leakage": "nenhum — conhecida antes da produção"
+    },
+    {
+      "feature": "Catalyst_Age_Days",
+      "modelo": "Energia",
+      "tipo": "estado",
+      "justificativa": "Canal causal via gás (EDA H2: Gas = U(3000,5000) + 0,5·idade); base da decisão de troca de catalisador.",
+      "corr_max": 0.01,
+      "VIF": 1.0,
+      "risco_leakage": "nenhum — conhecida antes da produção"
+    },
+    {
+      "feature": "Vib_Degradado",
+      "modelo": "Health (etapa A), Yield sem Health",
+      "tipo": "estado",
+      "justificativa": "Vibração > 6,5 mm/s muda o regime do Health (EDA H1); é o sinal que indica manutenção mecânica.",
+      "corr_max": 0.001,
+      "VIF": 1.0,
+      "risco_leakage": "nenhum — conhecida antes da produção"
+    }
+  ],
+  "excluidas": {
+    "Electricity_MWh": "Leakage: consumo medido, compõe o numerador de Energy_Intensity.",
+    "Natural_Gas_m3h": "Leakage: consumo medido, compõe o numerador de Energy_Intensity.",
+    "Steam_Tons_h": "Leakage (consumo medido) e fora da fórmula de Energy_Intensity.",
+    "Product_Yield_Tons / Energy_Intensity": "O target de um modelo nunca entra no outro (denominador de EI).",
+    "Delta_Temp": "Combina T e Ambient, ambos sem efeito (H4/H5); colinear exato (VIF infinito).",
+    "Severidade": "Combina T e P, ambos sem efeito (H5).",
+    "Carga_por_Abertura": "Sem ganho na CV e cria alavanca espúria na válvula dentro do otimizador.",
+    "Idade_Norm": "Redundante: corr = 1 com Catalyst_Age_Days.",
+    "Vibration_Level_mm_s (no modelo de energia)": "Efeito totalmente mediado pelo Health; dentro de cada regime, corr ≈ 0.",
+    "Reactor_Temp_C / Reactor_Pressure_Bar / Valve_Opening_Percent": "Sem efeito linear nem não linear (H5); ficam fixos na otimização.",
+    "Ambient_Temp_C, Mês, Hora": "Sem sazonalidade e sem efeito (H4).",
+    "One-hot Unit_Name / Catalyst_Type": "Plantas e catalisadores não são populações distintas (H6); interação com idade não significativa (H3)."
+  },
+  "arquivos_modelos": {
+    "model_energy.pkl": "Energy_Intensity / Ridge",
+    "model_yield.pkl": "Product_Yield_Tons / Ridge",
+    "model_health.pkl": "Sensor_Health_Index / Ridge",
+    "model_energy_hgb.pkl": "Energy_Intensity / HGB",
+    "model_yield_hgb.pkl": "Product_Yield_Tons / HGB"
+  },
   "bounds": {
     "Feedstock_Flow_m3h": [
       451.92020873722953,
@@ -40,27 +127,584 @@
   "metricas": [
     {
       "Target": "Energy_Intensity",
-      "Modelo": "Ridge (baseline)",
-      "R2": 0.6772050460054588,
-      "RMSE": 0.3487483040258428,
-      "MAE": 0.2827919634003465,
-      "MAPE_%": 9.97792812361388
+      "Modelo": "Ridge log-log",
+      "R2_KFold": 0.7114076907137268,
+      "R2_KFold_dp": 0.009510097619416999,
+      "RMSE_KFold": 0.335737963858063,
+      "RMSE_KFold_dp": 0.0066076332169132165,
+      "MAE_KFold": 0.27083586528494225,
+      "MAE_KFold_dp": 0.004654373697903707,
+      "MAPE_%_KFold": 9.522657744858904,
+      "MAPE_%_KFold_dp": 0.12341876522982646,
+      "R2_TimeSeries": 0.7094040039408944,
+      "R2_TimeSeries_dp": 0.015282106353848097,
+      "RMSE_TimeSeries": 0.3349818356649267,
+      "RMSE_TimeSeries_dp": 0.006937090204588237,
+      "MAE_TimeSeries": 0.27051111261910316,
+      "MAE_TimeSeries_dp": 0.006829843090046527,
+      "MAPE_%_TimeSeries": 9.510391487141515,
+      "MAPE_%_TimeSeries_dp": 0.24286392987394662,
+      "R2_Holdout": 0.6937332324132961,
+      "RMSE_Holdout": 0.33970244538595584,
+      "MAE_Holdout": 0.2758726728115232,
+      "MAPE_%_Holdout": 9.630813982355466,
+      "Papel": "proposto",
+      "R2": 0.7114076907137268,
+      "RMSE": 0.335737963858063,
+      "MAE": 0.27083586528494225,
+      "MAPE_%": 9.522657744858904
+    },
+    {
+      "Target": "Energy_Intensity",
+      "Modelo": "HGB",
+      "R2_KFold": 0.6947890404564442,
+      "R2_KFold_dp": 0.007229210912021704,
+      "RMSE_KFold": 0.34530338056766674,
+      "RMSE_KFold_dp": 0.006670382271867569,
+      "MAE_KFold": 0.27794070409929633,
+      "MAE_KFold_dp": 0.00473883007250421,
+      "MAPE_%_KFold": 9.826843822972402,
+      "MAPE_%_KFold_dp": 0.13002204608018703,
+      "R2_TimeSeries": 0.6812751077230992,
+      "R2_TimeSeries_dp": 0.029109569088925612,
+      "RMSE_TimeSeries": 0.3506293822973895,
+      "RMSE_TimeSeries_dp": 0.014517881634902271,
+      "MAE_TimeSeries": 0.28090907162332296,
+      "MAE_TimeSeries_dp": 0.01169551305545525,
+      "MAPE_%_TimeSeries": 9.916935166964436,
+      "MAPE_%_TimeSeries_dp": 0.4239163540639736,
+      "R2_Holdout": 0.6744714246570984,
+      "RMSE_Holdout": 0.3502218957327107,
+      "MAE_Holdout": 0.2829243499047778,
+      "MAPE_%_Holdout": 9.934327779439139,
+      "Papel": "verificação",
+      "R2": 0.6947890404564442,
+      "RMSE": 0.34530338056766674,
+      "MAE": 0.27794070409929633,
+      "MAPE_%": 9.826843822972402
+    },
+    {
+      "Target": "Energy_Intensity",
+      "Modelo": "Baseline atual (12 features)",
+      "R2_KFold": 0.6883238930015055,
+      "R2_KFold_dp": 0.010097092234548334,
+      "RMSE_KFold": 0.34893154066638743,
+      "RMSE_KFold_dp": 0.008202315070828917,
+      "MAE_KFold": 0.2802390858246776,
+      "MAE_KFold_dp": 0.00583705727335009,
+      "MAPE_%_KFold": 9.931025056580541,
+      "MAPE_%_KFold_dp": 0.17241593973159455,
+      "R2_TimeSeries": 0.6861662641151138,
+      "R2_TimeSeries_dp": 0.016384050365286576,
+      "RMSE_TimeSeries": 0.3481217414121604,
+      "RMSE_TimeSeries_dp": 0.007208767846725263,
+      "MAE_TimeSeries": 0.28039384262364625,
+      "MAE_TimeSeries_dp": 0.0068371346600747986,
+      "MAPE_%_TimeSeries": 9.944988845200681,
+      "MAPE_%_TimeSeries_dp": 0.264156875431643,
+      "R2_Holdout": 0.6772050460054588,
+      "RMSE_Holdout": 0.3487483040258428,
+      "MAE_Holdout": 0.2827919634003465,
+      "MAPE_%_Holdout": 9.97792812361388,
+      "Papel": "referência",
+      "R2": 0.6883238930015055,
+      "RMSE": 0.34893154066638743,
+      "MAE": 0.2802390858246776,
+      "MAPE_%": 9.931025056580541
+    },
+    {
+      "Target": "Energy_Intensity",
+      "Modelo": "COM leakage",
+      "R2_KFold": 0.9986755904944635,
+      "R2_KFold_dp": 5.5867420060063006e-05,
+      "RMSE_KFold": 0.02274201841650951,
+      "RMSE_KFold_dp": 0.0005083922140242537,
+      "MAE_KFold": 0.017328173317816668,
+      "MAE_KFold_dp": 0.0003072330524423107,
+      "MAPE_%_KFold": 0.6106404569694595,
+      "MAPE_%_KFold_dp": 0.009832092412132261,
+      "R2_TimeSeries": 0.9986593761807045,
+      "R2_TimeSeries_dp": 7.226765671652864e-05,
+      "RMSE_TimeSeries": 0.022751597256303307,
+      "RMSE_TimeSeries_dp": 0.0004611407784033398,
+      "MAE_TimeSeries": 0.017321014555804915,
+      "MAE_TimeSeries_dp": 0.00032146021175429875,
+      "MAPE_%_TimeSeries": 0.6106478206655106,
+      "MAPE_%_TimeSeries_dp": 0.013283130495417662,
+      "R2_Holdout": 0.9986223909424967,
+      "RMSE_Holdout": 0.02278304303511097,
+      "MAE_Holdout": 0.017432634782627125,
+      "MAPE_%_Holdout": 0.6083199525553155,
+      "Papel": "referência",
+      "R2": 0.9986755904944635,
+      "RMSE": 0.02274201841650951,
+      "MAE": 0.017328173317816668,
+      "MAPE_%": 0.6106404569694595
     },
     {
       "Target": "Product_Yield_Tons",
-      "Modelo": "Ridge (baseline)",
-      "R2": 0.9924925730428051,
-      "RMSE": 1.1880441397203154,
-      "MAE": 0.8054381575711418,
-      "MAPE_%": 1.0671805591078698
+      "Modelo": "Ridge log-log",
+      "R2_KFold": 0.9999999831730673,
+      "R2_KFold_dp": 2.364713433859563e-10,
+      "RMSE_KFold": 0.0018264127922058494,
+      "RMSE_KFold_dp": 3.972302752431032e-05,
+      "MAE_KFold": 0.0014359722719814291,
+      "MAE_KFold_dp": 2.8737893960073325e-05,
+      "MAPE_%_KFold": 0.0017931705838371836,
+      "MAPE_%_KFold_dp": 3.346222810126741e-05,
+      "R2_TimeSeries": 0.9999998834823052,
+      "R2_TimeSeries_dp": 1.6139074447627886e-07,
+      "RMSE_TimeSeries": 0.004059979518806629,
+      "RMSE_TimeSeries_dp": 0.002929964339128499,
+      "MAE_TimeSeries": 0.0031810177425820796,
+      "MAE_TimeSeries_dp": 0.0022990798601465585,
+      "MAPE_%_TimeSeries": 0.0039501890755319615,
+      "MAPE_%_TimeSeries_dp": 0.002839869643313577,
+      "R2_Holdout": 0.9999999837250668,
+      "RMSE_Holdout": 0.001749228826940532,
+      "MAE_Holdout": 0.0013677693110177138,
+      "MAPE_%_Holdout": 0.0017229846165609153,
+      "Papel": "proposto",
+      "R2": 0.9999999831730673,
+      "RMSE": 0.0018264127922058494,
+      "MAE": 0.0014359722719814291,
+      "MAPE_%": 0.0017931705838371836
+    },
+    {
+      "Target": "Product_Yield_Tons",
+      "Modelo": "HGB",
+      "R2_KFold": 0.9990082277826632,
+      "R2_KFold_dp": 0.00010948429331951096,
+      "RMSE_KFold": 0.4427212807367451,
+      "RMSE_KFold_dp": 0.021465006872845107,
+      "MAE_KFold": 0.2997831558242757,
+      "MAE_KFold_dp": 0.00669521740356068,
+      "MAPE_%_KFold": 0.387634063096141,
+      "MAPE_%_KFold_dp": 0.005051237493938765,
+      "R2_TimeSeries": 0.9980149665184376,
+      "R2_TimeSeries_dp": 0.0013932622047701077,
+      "RMSE_TimeSeries": 0.6024056154378395,
+      "RMSE_TimeSeries_dp": 0.20666872029851208,
+      "MAE_TimeSeries": 0.38422001079586576,
+      "MAE_TimeSeries_dp": 0.11304507919120775,
+      "MAPE_%_TimeSeries": 0.4924698786106919,
+      "MAPE_%_TimeSeries_dp": 0.14644369673897384,
+      "R2_Holdout": 0.9990743197485685,
+      "RMSE_Holdout": 0.41717427315238087,
+      "MAE_Holdout": 0.2937782558287675,
+      "MAPE_%_Holdout": 0.380047814048931,
+      "Papel": "verificação",
+      "R2": 0.9990082277826632,
+      "RMSE": 0.4427212807367451,
+      "MAE": 0.2997831558242757,
+      "MAPE_%": 0.387634063096141
+    },
+    {
+      "Target": "Product_Yield_Tons",
+      "Modelo": "Baseline atual (12 features)",
+      "R2_KFold": 0.9927368628226881,
+      "R2_KFold_dp": 0.00023156699396304989,
+      "RMSE_KFold": 1.199552287845655,
+      "RMSE_KFold_dp": 0.010351427717765567,
+      "MAE_KFold": 0.8078276955785686,
+      "MAE_KFold_dp": 0.008476372152927607,
+      "MAPE_%_KFold": 1.071908198115799,
+      "MAPE_%_KFold_dp": 0.014259694689839236,
+      "R2_TimeSeries": 0.9927181244907446,
+      "R2_TimeSeries_dp": 0.000376990213513557,
+      "RMSE_TimeSeries": 1.2015765917338082,
+      "RMSE_TimeSeries_dp": 0.028426233403372407,
+      "MAE_TimeSeries": 0.810402710338658,
+      "MAE_TimeSeries_dp": 0.019705786872424358,
+      "MAPE_%_TimeSeries": 1.0681999724706797,
+      "MAPE_%_TimeSeries_dp": 0.029827436125360835,
+      "R2_Holdout": 0.9924925730428051,
+      "RMSE_Holdout": 1.1880441397203154,
+      "MAE_Holdout": 0.8054381575711418,
+      "MAPE_%_Holdout": 1.0671805591078698,
+      "Papel": "referência",
+      "R2": 0.9927368628226881,
+      "RMSE": 1.199552287845655,
+      "MAE": 0.8078276955785686,
+      "MAPE_%": 1.071908198115799
+    },
+    {
+      "Target": "Product_Yield_Tons",
+      "Modelo": "COM leakage",
+      "R2_KFold": 0.9979057397734117,
+      "R2_KFold_dp": 4.856121334776631e-05,
+      "RMSE_KFold": 0.6443219826432557,
+      "RMSE_KFold_dp": 0.015687094446329684,
+      "MAE_KFold": 0.48874220101097343,
+      "MAE_KFold_dp": 0.008506082218736092,
+      "MAPE_%_KFold": 0.6102717997004036,
+      "MAPE_%_KFold_dp": 0.010187040258091307,
+      "R2_TimeSeries": 0.9978958395265709,
+      "R2_TimeSeries_dp": 9.702516026797184e-05,
+      "RMSE_TimeSeries": 0.6460977192777905,
+      "RMSE_TimeSeries_dp": 0.020683630908190552,
+      "MAE_TimeSeries": 0.4889718303053726,
+      "MAE_TimeSeries_dp": 0.011935849013884784,
+      "MAPE_%_TimeSeries": 0.6098098195720701,
+      "MAPE_%_TimeSeries_dp": 0.012121618101712781,
+      "R2_Holdout": 0.9979071730502249,
+      "RMSE_Holdout": 0.627268788088486,
+      "MAE_Holdout": 0.48169070388424917,
+      "MAPE_%_Holdout": 0.6072162136587782,
+      "Papel": "referência",
+      "R2": 0.9979057397734117,
+      "RMSE": 0.6443219826432557,
+      "MAE": 0.48874220101097343,
+      "MAPE_%": 0.6102717997004036
+    },
+    {
+      "Target": "Product_Yield_Tons",
+      "Modelo": "Ridge log-log SEM Health",
+      "R2_KFold": 0.6565948871031595,
+      "R2_KFold_dp": 0.009534600383452338,
+      "RMSE_KFold": 8.248791422942404,
+      "RMSE_KFold_dp": 0.09023109401000125,
+      "MAE_KFold": 7.090873843453062,
+      "MAE_KFold_dp": 0.10405688080128583,
+      "MAPE_%_KFold": 8.942309562187825,
+      "MAPE_%_KFold_dp": 0.12406503985325358,
+      "R2_TimeSeries": 0.6570485925732636,
+      "R2_TimeSeries_dp": 0.009538610490207659,
+      "RMSE_TimeSeries": 8.247940216340208,
+      "RMSE_TimeSeries_dp": 0.10721919097090404,
+      "MAE_TimeSeries": 7.084795742193661,
+      "MAE_TimeSeries_dp": 0.13381607292060696,
+      "MAPE_%_TimeSeries": 8.921171195385341,
+      "MAPE_%_TimeSeries_dp": 0.15166268780789732,
+      "R2_Holdout": 0.6515637240309434,
+      "RMSE_Holdout": 8.093729772311931,
+      "MAE_Holdout": 6.894552841118588,
+      "MAPE_%_Holdout": 8.745236852544053,
+      "Papel": "visão alternativa",
+      "R2": 0.6565948871031595,
+      "RMSE": 8.248791422942404,
+      "MAE": 7.090873843453062,
+      "MAPE_%": 8.942309562187825
+    },
+    {
+      "Target": "Sensor_Health_Index",
+      "Modelo": "Ridge (Vib_Degradado)",
+      "R2_KFold": 0.4372585551977018,
+      "R2_KFold_dp": 0.009487473648471655,
+      "RMSE_KFold": 0.08267629000484236,
+      "RMSE_KFold_dp": 0.0009215916509227006,
+      "MAE_KFold": 0.07149226019616461,
+      "MAE_KFold_dp": 0.00110174500594872,
+      "MAPE_%_KFold": 8.979578039569043,
+      "MAPE_%_KFold_dp": 0.13058791678639864,
+      "R2_TimeSeries": 0.43625317229362387,
+      "R2_TimeSeries_dp": 0.015971656907340127,
+      "RMSE_TimeSeries": 0.08259101372459857,
+      "RMSE_TimeSeries_dp": 0.0009725715157974755,
+      "MAE_TimeSeries": 0.0713871970931535,
+      "MAE_TimeSeries_dp": 0.0012501545769630692,
+      "MAPE_%_TimeSeries": 8.957707416304801,
+      "MAPE_%_TimeSeries_dp": 0.14679546640161706,
+      "R2_Holdout": 0.44121577907108855,
+      "RMSE_Holdout": 0.08137890283508521,
+      "MAE_Holdout": 0.0697700840565081,
+      "MAPE_%_Holdout": 8.79334900240999,
+      "Papel": "proposto",
+      "R2": 0.4372585551977018,
+      "RMSE": 0.08267629000484236,
+      "MAE": 0.07149226019616461,
+      "MAPE_%": 8.979578039569043
+    },
+    {
+      "Target": "Sensor_Health_Index",
+      "Modelo": "HGB (vibração contínua)",
+      "R2_KFold": 0.4260252818848917,
+      "R2_KFold_dp": 0.009119193883482889,
+      "RMSE_KFold": 0.08349626807970278,
+      "RMSE_KFold_dp": 0.0007158698636793954,
+      "MAE_KFold": 0.07190470736227482,
+      "MAE_KFold_dp": 0.0007541327025452565,
+      "MAPE_%_KFold": 9.032592299151572,
+      "MAPE_%_KFold_dp": 0.08950932291005212,
+      "R2_TimeSeries": 0.414718874851571,
+      "R2_TimeSeries_dp": 0.01842642397923614,
+      "RMSE_TimeSeries": 0.08415662991474973,
+      "RMSE_TimeSeries_dp": 0.0015011207126930885,
+      "MAE_TimeSeries": 0.07240067734731338,
+      "MAE_TimeSeries_dp": 0.0015149537336666787,
+      "MAPE_%_TimeSeries": 9.083259148713116,
+      "MAPE_%_TimeSeries_dp": 0.18031071027439502,
+      "R2_Holdout": 0.4327222735507834,
+      "RMSE_Holdout": 0.08199504890982544,
+      "MAE_Holdout": 0.07007159043171873,
+      "MAPE_%_Holdout": 8.831662597358042,
+      "Papel": "verificação",
+      "R2": 0.4260252818848917,
+      "RMSE": 0.08349626807970278,
+      "MAE": 0.07190470736227482,
+      "MAPE_%": 9.032592299151572
     }
   ],
+  "leakage": {
+    "r2_com_leakage": 0.9986755904944635,
+    "r2_honesto": 0.7114076907137268,
+    "r2_teto": 0.712602409571989
+  },
+  "coeficientes": {
+    "energia": {
+      "target_em_log": true,
+      "intercepto": 7.001940860125904,
+      "coef": {
+        "log_Flow": -0.9833486600374868,
+        "log_Health": -0.9971717591847051,
+        "Catalyst_Age_Days": 8.035700108720712e-05
+      }
+    },
+    "yield": {
+      "target_em_log": true,
+      "intercepto": -1.7141924634596801,
+      "coef": {
+        "log_Flow": 0.9999003923937265,
+        "log_Health": 0.9999002464856235
+      }
+    },
+    "health": {
+      "target_em_log": false,
+      "intercepto": 0.8509092765527035,
+      "coef": {
+        "Vib_Degradado": -0.16913106941771905
+      }
+    }
+  },
+  "ols_energia": {
+    "log_Flow": {
+      "coef": -0.9834741868769425,
+      "IC95_inf": -1.0039454505174452,
+      "IC95_sup": -0.96300292323644,
+      "p_valor": 0.0,
+      "IC_contem_0": false
+    },
+    "log_Health": {
+      "coef": -1.0049482997939994,
+      "IC95_inf": -1.0236530919607145,
+      "IC95_sup": -0.9862435076272842,
+      "p_valor": 0.0,
+      "IC_contem_0": false
+    },
+    "Catalyst_Age_Days": {
+      "coef": 8.01911288934057e-05,
+      "IC95_inf": 5.876516733636353e-05,
+      "IC95_sup": 0.00010161709045044789,
+      "p_valor": 2.3636916907257717e-13,
+      "IC_contem_0": false
+    },
+    "Reactor_Temp_C": {
+      "coef": 4.7861142524204096e-05,
+      "IC95_inf": -8.29473640943823e-06,
+      "IC95_sup": 0.00010401702145784642,
+      "p_valor": 0.09481982181063242,
+      "IC_contem_0": true
+    },
+    "Reactor_Pressure_Bar": {
+      "coef": 0.0008716950338072192,
+      "IC95_inf": 0.00011865945215134297,
+      "IC95_sup": 0.0016247306154630954,
+      "p_valor": 0.0232846989965965,
+      "IC_contem_0": false
+    },
+    "Valve_Opening_Percent": {
+      "coef": -5.456043775583841e-05,
+      "IC95_inf": -0.0001591163165757015,
+      "IC95_sup": 4.9995441064024684e-05,
+      "p_valor": 0.3063833284902208,
+      "IC_contem_0": true
+    },
+    "Vibration_Level_mm_s": {
+      "coef": -0.000919528565906776,
+      "IC95_inf": -0.002055281160038951,
+      "IC95_sup": 0.00021622402822539868,
+      "p_valor": 0.11253992971557097,
+      "IC_contem_0": true
+    },
+    "Ambient_Temp_C": {
+      "coef": 3.260133269877545e-05,
+      "IC95_inf": -9.310200765973674e-05,
+      "IC95_sup": 0.00015830467305728765,
+      "p_valor": 0.6111974558174936,
+      "IC_contem_0": true
+    }
+  },
+  "efeito_10pct": {
+    "Feedstock_Flow_m3h": {
+      "EI_OLS_%": -8.947607335691943,
+      "EI_OLS_IC95": "[-9.13, -8.77]",
+      "EI_HGB_%": -8.837510353525559,
+      "Yield_%": 10.00000000000012
+    },
+    "Reactor_Temp_C": {
+      "EI_OLS_%": 0.3929692078163516,
+      "EI_OLS_IC95": "[-0.07, +0.86]",
+      "EI_HGB_%": 0.5135104033837407,
+      "Yield_%": -1.965094753586527e-12
+    },
+    "Reactor_Pressure_Bar": {
+      "EI_OLS_%": 0.2792068603406417,
+      "EI_OLS_IC95": "[+0.04, +0.52]",
+      "EI_HGB_%": 0.22461150842472435,
+      "Yield_%": 6.661338147750939e-14
+    },
+    "Valve_Opening_Percent": {
+      "EI_OLS_%": -0.03147638692957422,
+      "EI_OLS_IC95": "[-0.09, +0.03]",
+      "EI_HGB_%": 0.027607749630652236,
+      "Yield_%": 0.0
+    }
+  },
+  "importancia_permutacao": {
+    "Reactor_Pressure_Bar": -0.0002185649797876277,
+    "Ambient_Temp_C": -0.00012437427971332405,
+    "Vibration_Level_mm_s": 0.0007726437062023584,
+    "Reactor_Temp_C": 0.001395659509904712,
+    "Valve_Opening_Percent": 0.002627632893426668,
+    "Catalyst_Age_Days": 0.004318441384608351,
+    "Feedstock_Flow_m3h": 0.5373235707500055,
+    "Sensor_Health_Index": 0.9255271869427434
+  },
+  "pressao_falso_positivo": {
+    "p_valor_isolado": 0.0232846989965965,
+    "subamostras": {
+      "1ª metade do período": {
+        "coef": 0.0003163915715493422,
+        "IC95_inf": -0.0007595990859746962,
+        "IC95_sup": 0.0013923822290733807,
+        "p_valor": 0.5643297098989273
+      },
+      "2ª metade do período": {
+        "coef": 0.0014227934861831223,
+        "IC95_inf": 0.0003682556803997355,
+        "IC95_sup": 0.0024773312919665093,
+        "p_valor": 0.008193585583777802
+      },
+      "Ammonia_Unit_02": {
+        "coef": 0.0019507340333277832,
+        "IC95_inf": 0.0006174402401225014,
+        "IC95_sup": 0.003284027826533065,
+        "p_valor": 0.004148137034791723
+      },
+      "Ethylene_Plant_01": {
+        "coef": -0.00021880413917888856,
+        "IC95_inf": -0.0014824158309619615,
+        "IC95_sup": 0.0010448075526041842,
+        "p_valor": 0.7342500631746182
+      },
+      "Methanol_Complex_03": {
+        "coef": 0.000954869303773226,
+        "IC95_inf": -0.0003711816004546266,
+        "IC95_sup": 0.0022809202080010787,
+        "p_valor": 0.15808576202895294
+      }
+    },
+    "efeito_faixa_pct": 0.8607507612468535,
+    "conclusao": "Falso positivo: instável, sem mecanismo e irrelevante (< 1% de EI)."
+  },
+  "achados": {
+    "H1": {
+      "titulo": "Limiar de vibração",
+      "limiar_mm_s": 6.5,
+      "contaminacao_cruzada": 0.0,
+      "health_medio_normal": 0.8509134507074964,
+      "health_medio_degradado": 0.6817654681828373,
+      "pct_leituras_degradadas": 24.68,
+      "variacao_producao_pct": -19.889006722504643,
+      "conclusao": "Confirmada: o Health cai em degrau em 6,5 mm/s, de U(0,70–1,00) para U(0,56–0,80)."
+    },
+    "H2": {
+      "titulo": "Catalisador envelhece -> mais gás",
+      "slope_ajustado": 0.47474722647945816,
+      "slope_gerador": 0.5,
+      "residuo_min": 3000.4578000531105,
+      "residuo_max": 4999.833905940684,
+      "conclusao": "Confirmada: Gas = U(3000, 5000) + 0,5·idade."
+    },
+    "H3": {
+      "titulo": "Interação Catalyst_Type x idade no gás",
+      "F": 1.735834561482576,
+      "p_valor": 0.1763061796615549,
+      "significativa": false,
+      "inclinacoes": {
+        "Cobalt_Premium_Z2": 0.46345047775680925,
+        "Iron_Standard_V5": 0.6058996979580308,
+        "Platinum_Base_X1": 0.35809548989887396
+      },
+      "conclusao": "Não significativa: o tipo de catalisador não entra como decisão."
+    },
+    "H4": {
+      "titulo": "Sazonalidade do ambiente",
+      "amplitude_mes_C": 2.046818363736552,
+      "amplitude_hora_C": 0.9510645121190962,
+      "desvio_global_C": 17.969883868365716,
+      "conclusao": "Refutada: sem sazonalidade; features temporais descartadas."
+    },
+    "H5": {
+      "titulo": "Setpoints T/P/V sem efeito",
+      "mi_maxima": 0.02499650239200779,
+      "conclusao": "Confirmada: sem efeito linear nem não linear."
+    },
+    "H6": {
+      "titulo": "Plantas/catalisadores como populações distintas",
+      "p_valores": {
+        "Catalyst_Type x Energy_Intensity": 0.33674192827883437,
+        "Unit_Name x Product_Yield_Tons": 0.5369186270416568,
+        "Catalyst_Type x Product_Yield_Tons": 0.8573444735283182,
+        "Unit_Name x Energy_Intensity": 0.9461086264550873
+      },
+      "conclusao": "Não são populações distintas: um modelo único serve às 3 plantas."
+    },
+    "H7": {
+      "titulo": "Independência temporal",
+      "autocorr_lag1": {
+        "Energy_Intensity": 0.017951316920630327,
+        "Product_Yield_Tons": 0.0077920971897639845
+      },
+      "r2_kfold": 0.7029775051383498,
+      "r2_timeseries": 0.701337051875045,
+      "conclusao": "Confirmada: sem drift; KFold é válido."
+    },
+    "H8": {
+      "titulo": "Teto teórico de R²",
+      "r2_teto_energia": 0.712602409571989,
+      "r2_honesto_holdout": 0.6937332324132961,
+      "r2_yield_sem_health": 0.5265659511299394,
+      "conclusao": "O ruído do gás/eletricidade limita o R² da energia a ~0,71."
+    }
+  },
   "premissas": {
     "preco_produto_ton": 2800.0,
     "custo_energia_unidade": 80.74,
     "custo_manutencao": 120000.0,
     "custo_falha": 800000.0,
-    "producao_minima": 80.0
+    "producao_minima": 80.0,
+    "preco_eletricidade_mwh": 350.0,
+    "preco_gas_m3": 2.5,
+    "preco_vapor_ton": 80.0,
+    "custo_energia_por_unidade_intensidade": 80.74,
+    "custo_manutencao_programada": 120000.0,
+    "custo_falha_nao_programada": 800000.0,
+    "downtime_manutencao_h": 24,
+    "horizonte_decisao_h": 720,
+    "limite_vibracao_alerta": 4.5,
+    "limite_vibracao_critico": 6.0,
+    "limite_sensor_health": 0.7,
+    "limite_idade_catalisador": 400,
+    "limiar_vibracao_regime": 6.5,
+    "producao_minima_ton": 80.0,
+    "random_state": 42
   },
-  "aviso": "Modelos BASELINE gerados por scripts/bootstrap_models.py \u2014 substituir pela se\u00e7\u00e3o 12 do notebook."
+  "figuras": [
+    "ei_vazao_regime.png",
+    "h1_degrau_health.png",
+    "h2_gas_idade.png",
+    "importancia_permutacao.png",
+    "leakage_r2.png"
+  ]
 }

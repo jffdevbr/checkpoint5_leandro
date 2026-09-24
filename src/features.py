@@ -46,12 +46,21 @@ FEATURES_ENERGIA = ["log_Flow", "log_Health", "Catalyst_Age_Days"]
 FEATURES_YIELD = ["log_Flow", "log_Health"]
 FEATURES_ESTADO = ["Vib_Degradado"]
 FEATURES_YIELD_SEM_HEALTH = ["log_Flow", "Vib_Degradado"]
+# HGB de verificação cruzada: recebe TODAS as variáveis honestas, sem engenharia,
+# para mostrar (importância por permutação) que só vazão/Health/idade importam.
+FEATURES_HGB = cfg.CONTROLAVEIS + cfg.ESTADO + ["Ambient_Temp_C"]
 
 FEATURES_BASELINE = (
     cfg.CONTROLAVEIS
     + cfg.ESTADO
     + ["Ambient_Temp_C", "Delta_Temp", "Severidade", "Carga_por_Abertura", "Idade_Norm"]
 )
+
+# Tudo que algum modelo do pipeline consome. Os modelos selecionam as próprias
+# colunas internamente, então montar_X entrega este superconjunto.
+FEATURES_ENTRADA = list(dict.fromkeys(
+    FEATURES_ENERGIA + FEATURES_YIELD + FEATURES_ESTADO + FEATURES_YIELD_SEM_HEALTH + FEATURES_HGB
+))
 
 # Catálogo usado na tabela da seção 4.3 e no export (metadata.json).
 CATALOGO_FEATURES = [
@@ -91,7 +100,7 @@ def montar_X(x: Sequence[float], ctx: dict[str, Any], features: Sequence[str] | 
     d: dict[str, Any] = dict(zip(cfg.CONTROLAVEIS, x))
     d.update(ctx)
     _derivar(d)
-    cols = list(features) if features is not None else FEATURES_ENERGIA
+    cols = list(features) if features is not None else FEATURES_ENTRADA
     return pd.DataFrame([d])[cols]
 
 

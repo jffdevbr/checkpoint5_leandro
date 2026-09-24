@@ -82,13 +82,13 @@ class Contexto(BaseModel):
     """Estado do equipamento + condições externas no momento da decisão."""
 
     Catalyst_Age_Days: float = Field(180, ge=0, le=2000)
-    Sensor_Health_Index: float = Field(0.85, ge=0, le=1)
+    Sensor_Health_Index: float = Field(0.85, gt=0, le=1)
     Vibration_Level_mm_s: float = Field(4.5, ge=0, le=20)
     Ambient_Temp_C: float = Field(20.0, ge=-40, le=60)
 
 
 class Setpoints(BaseModel):
-    Feedstock_Flow_m3h: float
+    Feedstock_Flow_m3h: float = Field(gt=0)
     Reactor_Temp_C: float
     Reactor_Pressure_Bar: float
     Valve_Opening_Percent: float
