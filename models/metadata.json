@@ -1,5 +1,5 @@
 {
-  "gerado_em": "2026-09-23T23:42:40",
+  "gerado_em": "2026-09-23T23:57:49",
   "features": [
     "log_Flow",
     "log_Health",
@@ -123,6 +123,145 @@
     "Sensor_Health_Index": 0.8476000444637364,
     "Vibration_Level_mm_s": 5.1189808684814375,
     "Ambient_Temp_C": 17.532885997508522
+  },
+  "setpoints_atuais": {
+    "Feedstock_Flow_m3h": 554.7207383351285,
+    "Reactor_Temp_C": 826.7963660824222,
+    "Reactor_Pressure_Bar": 31.894954930641635,
+    "Valve_Opening_Percent": 48.73628132662847
+  },
+  "otimizacao": {
+    "solucao_lp_contexto_atual": {
+      "rota": "A — LP (linprog/HiGHS)",
+      "sucesso": true,
+      "viavel": true,
+      "mensagem": "Ótimo encontrado.",
+      "setpoints": {
+        "Feedstock_Flow_m3h": 648.8081636914903,
+        "Reactor_Temp_C": 826.7963660824222,
+        "Reactor_Pressure_Bar": 31.894954930641635,
+        "Valve_Opening_Percent": 48.73628132662847
+      },
+      "energy_intensity": 2.247341050127187,
+      "producao_ton": 98.98514049579231,
+      "custo_energia": 17960.885060599794,
+      "custo_feedstock": 185299.61155028964,
+      "receita": 277158.3933882185,
+      "margem": 73897.89677732904,
+      "restricao_producao_atendida": true,
+      "vazao_necessaria_producao_minima": 524.3578410073196,
+      "preco_sombra_capacidade": 141.00108331522688,
+      "preco_sombra_producao_minima": 0.0,
+      "lp": {
+        "margem_por_m3h": 141.00108331522688,
+        "producao_por_m3h": 0.152551958776135,
+        "erro_linearizacao_pct": 0.007269910437868177
+      }
+    },
+    "linha_de_base": {
+      "energy_intensity": 2.621669244592219,
+      "producao_ton": 84.63205335171656,
+      "custo_energia": 17914.369276331025,
+      "custo_feedstock": 158428.24286851272,
+      "receita": 236969.74938480638,
+      "margem": 60627.13723996261
+    },
+    "ganho_margem_por_janela": 13270.759537366423,
+    "h_min_producao_minima": 0.6850175968174671,
+    "preco_equilibrio_feedstock": {
+      "normal": 107.06767292644699,
+      "degradado": 85.75925859729196
+    },
+    "rotas": [
+      {
+        "Rota": "A — LP (Ridge)",
+        "F*": 648.8081636915,
+        "Margem/janela": 73897.896777329,
+        "Iterações": null,
+        "Solver diz": "Ótimo encontrado.",
+        "F* na grade": null,
+        "Passos crescentes na grade": null
+      },
+      {
+        "Rota": "B — SLSQP (Ridge)",
+        "F*": 648.8081636915,
+        "Margem/janela": 73897.896777329,
+        "Iterações": 8.0,
+        "Solver diz": "Optimization terminated successfully",
+        "F* na grade": 648.8081636915,
+        "Passos crescentes na grade": "100%"
+      },
+      {
+        "Rota": "B — SLSQP (HGB)",
+        "F*": 545.0258272841,
+        "Margem/janela": 59526.4571571709,
+        "Iterações": 99.0,
+        "Solver diz": "Optimization terminated successfully",
+        "F* na grade": 648.8081636915,
+        "Passos crescentes na grade": "43%"
+      }
+    ],
+    "sensibilidade_producao_minima": [
+      {
+        "Y_min": 75,
+        "Regime": "normal",
+        "Viável": true,
+        "F*": 648.8081636915,
+        "Vazão necessária": 489.6679130968,
+        "Produção": 99.3720508126,
+        "Margem/janela": 74981.0544642927
+      },
+      {
+        "Y_min": 75,
+        "Regime": "degradado",
+        "Viável": true,
+        "F*": 648.8081636915,
+        "Vazão necessária": 611.1557349572,
+        "Produção": 79.6202369096,
+        "Margem/janela": 19686.8333191047
+      },
+      {
+        "Y_min": 80,
+        "Regime": "normal",
+        "Viável": true,
+        "F*": 648.8081636915,
+        "Vazão necessária": 522.3160172342,
+        "Produção": 99.3720508126,
+        "Margem/janela": 74981.0544642927
+      },
+      {
+        "Y_min": 80,
+        "Regime": "degradado",
+        "Viável": false,
+        "F*": 648.8081636915,
+        "Vazão necessária": 651.9030272187,
+        "Produção": 79.6202369096,
+        "Margem/janela": 19686.8333191047
+      },
+      {
+        "Y_min": 85,
+        "Regime": "normal",
+        "Viável": true,
+        "F*": 648.8081636915,
+        "Vazão necessária": 554.9641213717,
+        "Produção": 99.3720508126,
+        "Margem/janela": 74981.0544642927
+      },
+      {
+        "Y_min": 85,
+        "Regime": "degradado",
+        "Viável": false,
+        "F*": 648.8081636915,
+        "Vazão necessária": 692.6503194802,
+        "Produção": 79.6202369096,
+        "Margem/janela": 19686.8333191047
+      }
+    ],
+    "divergencia_ridge_hgb_p95_pct": {
+      "Energy_Intensity": 5.8236349992079415,
+      "Product_Yield_Tons": 0.7765778071603305
+    },
+    "setpoints_nao_causais": "T, P e Válvula fixos na operação atual (sem efeito, H5 e 5.2)."
   },
   "metricas": [
     {
@@ -687,6 +826,8 @@
     "preco_eletricidade_mwh": 350.0,
     "preco_gas_m3": 2.5,
     "preco_vapor_ton": 80.0,
+    "preco_feedstock_m3": 71.4,
+    "horas_por_janela": 4,
     "custo_energia_por_unidade_intensidade": 80.74,
     "custo_manutencao_programada": 120000.0,
     "custo_falha_nao_programada": 800000.0,
@@ -705,6 +846,8 @@
     "h1_degrau_health.png",
     "h2_gas_idade.png",
     "importancia_permutacao.png",
-    "leakage_r2.png"
+    "leakage_r2.png",
+    "otimizacao_rotas.png",
+    "otimizacao_sensibilidade.png"
   ]
 }

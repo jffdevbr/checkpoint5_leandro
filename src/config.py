@@ -64,6 +64,12 @@ PRECO_ELETRICIDADE_MWH = 350.0     # R$/MWh
 PRECO_GAS_M3 = 2.50                # R$/m³
 PRECO_VAPOR_TON = 80.0             # R$/ton de vapor
 
+# Feedstock: sem ele a margem é linear crescente na vazão com coeficiente
+# p·0,18·H (todo m³ vira receita). CALIBRADO para o feedstock ser 70% da
+# receita média (faixa típica de petroquímica): 70% × 224.609 / (4 h × 550,7 m³/h).
+PRECO_FEEDSTOCK_M3 = 71.4          # R$/m³
+HORAS_POR_JANELA = 4               # cada leitura do dataset cobre 4 h
+
 # Energia agregada. CALIBRADO nos dados: verificou-se que
 #   Energy_Intensity == (3.6*Electricity_MWh + 0.035*Natural_Gas_m3h) / Product_Yield_Tons
 # com R² = 1.000000 (identidade exata — ver seção 4 do notebook).

@@ -38,7 +38,12 @@
       "Bash(.venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\edit_export.py\")",
       "Bash(PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\run_full.py\" ml_ei_vazao c47)",
       "Bash(.venv/Scripts/python.exe -c \"import matplotlib; print\\(matplotlib.__version__\\)\")",
-      "Bash(PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\run_full.py\")"
+      "Bash(PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\run_full.py\")",
+      "Bash(PYTHONPATH=. PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\proto_opt.py\")",
+      "Bash(.venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\edit_opt.py\")",
+      "Bash(PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\run_full.py\" c29 c30 c31 c32 opt_viab opt_sens c33 c47)",
+      "Bash(PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\run_full.py\" c33)",
+      "Bash(PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe -)"
     ],
     "additionalDirectories": [
       "C:\\.GitHubJFF\\checkpoint5_leandro\\.claude"

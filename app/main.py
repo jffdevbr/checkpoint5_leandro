@@ -25,7 +25,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from scipy.optimize import minimize
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import src.config as cfg  # noqa: E402
@@ -125,8 +124,8 @@ def prever(x: list[float], ctx: Contexto) -> tuple[float, float]:
     return float(ART.energy.predict(X)[0]), float(ART.yield_.predict(X)[0])
 
 
-def economia(ei: float, yd: float) -> dict[str, float]:
-    return decisao.economia(ei, yd)
+def economia(ei: float, yd: float, vazao: float) -> dict[str, float]:
+    return decisao.economia(ei, yd, vazao)
 
 
 def prob_falha(ctx: Contexto, horizonte_h: float = cfg.HORIZONTE_DECISAO_H) -> float:
@@ -138,34 +137,18 @@ def bounds() -> dict[str, tuple[float, float]]:
     return {k: (float(v[0]), float(v[1])) for k, v in b.items()}
 
 
+def setpoints_fixos() -> list[float]:
+    """T, P e Válvula não têm efeito: ficam na operação atual (seção 6 do notebook)."""
+    atuais = ART.meta.get("setpoints_atuais") or {c: float(np.mean(v)) for c, v in bounds().items()}
+    return [float(atuais[c]) for c in cfg.CONTROLAVEIS[1:]]
+
+
 def otimizar(ctx: Contexto, producao_minima: float) -> dict[str, Any]:
-    B = bounds()
-
-    def objetivo(x: np.ndarray) -> float:
-        ei, yd = prever(list(x), ctx)
-        return cfg.CUSTO_ENERGIA_POR_UNIDADE_INTENSIDADE * ei * yd - cfg.PRECO_PRODUTO_TON * yd
-
-    def restr(x: np.ndarray) -> float:
-        _, yd = prever(list(x), ctx)
-        return yd - producao_minima
-
-    x0 = np.array([np.mean(B[c]) for c in cfg.CONTROLAVEIS])
-    res = minimize(
-        objetivo,
-        x0,
-        method="SLSQP",
-        bounds=[B[c] for c in cfg.CONTROLAVEIS],
-        constraints=[{"type": "ineq", "fun": restr}],
-        options={"maxiter": 300, "ftol": 1e-6},
+    """Rota A (LP na vazão) — mesma função usada pelo notebook."""
+    return decisao.otimizar_lp(
+        ART.yield_, ART.energy, ctx.model_dump(), bounds()["Feedstock_Flow_m3h"], setpoints_fixos(),
+        producao_minima, features=ART.meta.get("features") or features.FEATURES_BASELINE,
     )
-    ei, yd = prever(list(res.x), ctx)
-    return {
-        "sucesso": bool(res.success),
-        "mensagem": str(res.message),
-        "setpoints": {c: float(v) for c, v in zip(cfg.CONTROLAVEIS, res.x)},
-        **economia(ei, yd),
-        "restricao_producao_atendida": bool(yd >= producao_minima - 1e-6),
-    }
 
 
 def gate_automacao(ctx: Contexto, setpoints: dict[str, float]) -> dict[str, Any]:
@@ -208,7 +191,7 @@ def predict(body: PredictIn) -> dict[str, Any]:
     """Endpoint do modelo: setpoints + contexto -> energia, produção, custo."""
     ART.carregar()
     ei, yd = prever(body.setpoints.vetor(), body.contexto)
-    return economia(ei, yd)
+    return economia(ei, yd, body.setpoints.Feedstock_Flow_m3h)
 
 
 @app.post("/api/optimize")
@@ -257,7 +240,7 @@ def maintenance(body: MaintenanceIn) -> dict[str, Any]:
         r = otimizar(c, body.producao_minima)
         horas_op = cfg.HORIZONTE_DECISAO_H - parada
         p = prob_falha(c, horizonte_h=horas_op)
-        margem_horizonte = r["margem"] * horas_op / 4.0  # amostragem do dataset = 4 h
+        margem_horizonte = r["margem"] * horas_op / cfg.HORAS_POR_JANELA
         custo_risco = p * cfg.CUSTO_FALHA_NAO_PROGRAMADA
         cenarios.append(
             {
