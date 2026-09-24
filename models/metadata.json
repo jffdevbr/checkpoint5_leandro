@@ -40,35 +40,19 @@
   "metricas": [
     {
       "Target": "Energy_Intensity",
-      "Modelo": "Ridge",
+      "Modelo": "Ridge (baseline)",
       "R2": 0.6772050460054588,
       "RMSE": 0.3487483040258428,
       "MAE": 0.2827919634003465,
       "MAPE_%": 9.97792812361388
     },
     {
-      "Target": "Energy_Intensity",
-      "Modelo": "GradientBoosting",
-      "R2": 0.683710251738515,
-      "RMSE": 0.34521630001633885,
-      "MAE": 0.27929016785629035,
-      "MAPE_%": 9.805822332222927
-    },
-    {
       "Target": "Product_Yield_Tons",
-      "Modelo": "Ridge",
+      "Modelo": "Ridge (baseline)",
       "R2": 0.9924925730428051,
       "RMSE": 1.1880441397203154,
       "MAE": 0.8054381575711418,
       "MAPE_%": 1.0671805591078698
-    },
-    {
-      "Target": "Product_Yield_Tons",
-      "Modelo": "GradientBoosting",
-      "R2": 0.9983261395106175,
-      "RMSE": 0.5609790566100854,
-      "MAE": 0.443574790056576,
-      "MAPE_%": 0.5737106905483037
     }
   ],
   "premissas": {
@@ -77,5 +61,6 @@
     "custo_manutencao": 120000.0,
     "custo_falha": 800000.0,
     "producao_minima": 80.0
-  }
+  },
+  "aviso": "Modelos BASELINE gerados por scripts/bootstrap_models.py \u2014 substituir pela se\u00e7\u00e3o 12 do notebook."
 }

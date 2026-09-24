@@ -23,19 +23,8 @@ from sklearn.preprocessing import StandardScaler
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import src.config as cfg
-
-FEATURES = cfg.CONTROLAVEIS + cfg.ESTADO + [
-    "Ambient_Temp_C", "Delta_Temp", "Severidade", "Carga_por_Abertura", "Idade_Norm",
-]
-
-
-def build_features(df: pd.DataFrame) -> pd.DataFrame:
-    X = df.copy()
-    X["Delta_Temp"] = X["Reactor_Temp_C"] - X["Ambient_Temp_C"]
-    X["Severidade"] = X["Reactor_Temp_C"] * X["Reactor_Pressure_Bar"]
-    X["Carga_por_Abertura"] = X["Feedstock_Flow_m3h"] / X["Valve_Opening_Percent"].replace(0, np.nan)
-    X["Idade_Norm"] = X["Catalyst_Age_Days"] / cfg.LIMITE_IDADE_CATALISADOR
-    return X
+from src.features import FEATURES_ENERGIA as FEATURES
+from src.features import build_features, limites_operacionais
 
 
 def main() -> None:
@@ -62,8 +51,7 @@ def main() -> None:
         joblib.dump(mdl, cfg.MODELS_DIR / arquivo)
         modelos[target] = mdl
 
-    bounds = {c: [float(np.percentile(df[c], 5)), float(np.percentile(df[c], 95))]
-              for c in cfg.CONTROLAVEIS}
+    bounds = limites_operacionais(df, cfg.CONTROLAVEIS)
     ctx = {c: float(df[c].tail(24).median()) for c in cfg.ESTADO + ["Ambient_Temp_C"]}
 
     meta = {

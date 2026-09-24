@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c ' *)",
+      "Read(//tmp/**)",
+      "Bash(python3)",
+      "Bash(python -m py_compile src/features.py src/decisao.py app/main.py scripts/bootstrap_models.py)"
+    ]
+  }
+}

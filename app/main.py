@@ -29,6 +29,8 @@ from scipy.optimize import minimize
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import src.config as cfg  # noqa: E402
+import src.decisao as decisao  # noqa: E402
+import src.features as features  # noqa: E402
 
 STATIC = Path(__file__).parent / "static"
 
@@ -114,14 +116,8 @@ class MaintenanceIn(BaseModel):
 # =================================================================== núcleo
 def montar_X(x: list[float], ctx: Contexto) -> pd.DataFrame:
     """Reproduz EXATAMENTE o feature engineering do notebook (seção 3)."""
-    d: dict[str, float] = dict(zip(cfg.CONTROLAVEIS, x))
-    d.update(ctx.model_dump())
-    d["Delta_Temp"] = d["Reactor_Temp_C"] - d["Ambient_Temp_C"]
-    d["Severidade"] = d["Reactor_Temp_C"] * d["Reactor_Pressure_Bar"]
-    d["Carga_por_Abertura"] = d["Feedstock_Flow_m3h"] / d["Valve_Opening_Percent"]
-    d["Idade_Norm"] = d["Catalyst_Age_Days"] / cfg.LIMITE_IDADE_CATALISADOR
-    features = ART.meta.get("features") or list(d.keys())
-    return pd.DataFrame([d])[features]
+    feats = ART.meta.get("features") or features.FEATURES_ENERGIA
+    return features.montar_X(x, ctx.model_dump(), feats)
 
 
 def prever(x: list[float], ctx: Contexto) -> tuple[float, float]:
@@ -130,28 +126,11 @@ def prever(x: list[float], ctx: Contexto) -> tuple[float, float]:
 
 
 def economia(ei: float, yd: float) -> dict[str, float]:
-    custo_energia = cfg.CUSTO_ENERGIA_POR_UNIDADE_INTENSIDADE * ei * yd
-    receita = cfg.PRECO_PRODUTO_TON * yd
-    return {
-        "energy_intensity": ei,
-        "producao_ton": yd,
-        "custo_energia": custo_energia,
-        "receita": receita,
-        "margem": receita - custo_energia,
-    }
+    return decisao.economia(ei, yd)
 
 
 def prob_falha(ctx: Contexto, horizonte_h: float = cfg.HORIZONTE_DECISAO_H) -> float:
-    """Risco de falha no horizonte. Forma funcional é PREMISSA — calibrar com
-    histórico real de falhas antes de qualquer uso em produção."""
-    z = (
-        -6.0
-        + 0.9 * ctx.Vibration_Level_mm_s
-        + 0.004 * ctx.Catalyst_Age_Days
-        + 2.0 * (1 - ctx.Sensor_Health_Index)
-    )
-    p = 1 / (1 + np.exp(-z))
-    return float(np.clip(p * (horizonte_h / cfg.HORIZONTE_DECISAO_H), 0, 1))
+    return decisao.prob_falha(ctx.model_dump(), horizonte_h)
 
 
 def bounds() -> dict[str, tuple[float, float]]:
@@ -195,30 +174,7 @@ def gate_automacao(ctx: Contexto, setpoints: dict[str, float]) -> dict[str, Any]
     A tese do trabalho: o nível de automação não é fixo, é função da confiança
     do modelo no ponto específico em que a decisão está sendo tomada.
     """
-    motivos: list[str] = []
-    if ctx.Sensor_Health_Index < cfg.LIMITE_SENSOR_HEALTH:
-        motivos.append(
-            f"Sensor_Health_Index = {ctx.Sensor_Health_Index:.2f} < {cfg.LIMITE_SENSOR_HEALTH} "
-            "— entrada do modelo não é confiável."
-        )
-    if ctx.Vibration_Level_mm_s > cfg.LIMITE_VIBRACAO_CRITICO:
-        motivos.append(
-            f"Vibração {ctx.Vibration_Level_mm_s:.2f} mm/s acima do limite crítico "
-            f"({cfg.LIMITE_VIBRACAO_CRITICO}) — regra determinística de segurança."
-        )
-    B = bounds()
-    for c, v in setpoints.items():
-        lb, ub = B[c]
-        if not (lb - 1e-9 <= v <= ub + 1e-9):
-            motivos.append(f"{c} fora da faixa de treino — o modelo estaria extrapolando.")
-
-    if motivos:
-        nivel, desc = "L0", "Somente relatório — humano decide."
-    elif ctx.Sensor_Health_Index > 0.9 and ctx.Vibration_Level_mm_s < cfg.LIMITE_VIBRACAO_ALERTA:
-        nivel, desc = "L2", "Setpoints ajustados automaticamente; manutenção exige aprovação."
-    else:
-        nivel, desc = "L1", "Sistema recomenda; humano aprova."
-    return {"nivel": nivel, "descricao": desc, "motivos": motivos, "automatizavel": not motivos}
+    return decisao.gate_automacao(ctx.model_dump(), setpoints, bounds())
 
 
 # ==================================================================== rotas
