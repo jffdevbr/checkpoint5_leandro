@@ -202,6 +202,21 @@ A norma dá **as fronteiras das zonas, mas não probabilidades de falha**. Os va
 
 O limite de **6,5 mm/s**, que dispara a manutenção, não vem da norma. Ele vem **dos dados** (H1): é a vibração a partir da qual o Health cai e a produção despenca. Fica dentro da zona C, onde a própria norma já recomenda planejar a intervenção.
 
+**O que é "falha" e como a probabilidade é calculada.** O dataset **não tem nenhum registro de falha**. No projeto, "falha" é uma **quebra mecânica não programada**: um evento hipotético que para a planta e custa R$ 800 mil. Ela é diferente da **queda de Health e de produção**, que está nos dados e já entra no cálculo como margem menor. Adiar a manutenção, portanto, tem dois custos:
+
+| | Degradação | Falha |
+|---|---|---|
+| O que é | vibração > 6,5 mm/s faz o Health cair de ~0,85 para ~0,68 e a produção cair ~20% | quebra do equipamento |
+| Origem | medida nos dados (H1) | premissa do grupo, ancorada na ISO 10816 |
+| Como entra no custo | margem menor, re-otimizada dia a dia | probabilidade × R$ 800 mil |
+
+O cálculo tem quatro passos:
+
+1. **Curva de risco:** uma curva logística (em forma de "S", sempre entre 0% e 100%) dá a chance de falhar em 30 dias para cada nível de vibração. Ela passa pelos dois pontos escolhidos: 1% em 4,5 mm/s e 30% em 7,1 mm/s. Por exemplo: 2,5 mm/s → 0,06%; 5,1 mm/s → 2,4%; 6,5 mm/s → 15%; 8,0 mm/s → 61%.
+2. **Risco por dia:** a chance em 30 dias é convertida numa chance diária, com a fórmula `taxa diária = −ln(1 − P30) ÷ 30`.
+3. **Soma ao longo do cenário:** em cada cenário a vibração muda dia a dia (sobe 0,05 mm/s/dia e volta a 2,5 depois da manutenção). As taxas diárias são somadas, e a chance de falhar em algum momento do cenário é `1 − e^(−soma)`, ou seja, 1 menos a chance de passar por todos os dias sem falhar.
+4. **Custo esperado:** probabilidade × R$ 800 mil. No S1 (sem manutenção), a vibração passa de 9 mm/s em 80 dias: a chance de falha é de **81%**, com custo esperado de R$ 645 mil. No S3 (manutenção em 28 dias), a chance é de 14%, com custo esperado de R$ 108 mil.
+
 ---
 
 ## 5. Automação da decisão
