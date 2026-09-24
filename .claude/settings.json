@@ -4,7 +4,29 @@
       "Bash(python -c ' *)",
       "Read(//tmp/**)",
       "Bash(python3)",
-      "Bash(python -m py_compile src/features.py src/decisao.py app/main.py scripts/bootstrap_models.py)"
+      "Bash(python -m py_compile src/features.py src/decisao.py app/main.py scripts/bootstrap_models.py)",
+      "Bash(python3 -c \" *)",
+      "Bash(.venv/Scripts/python.exe)",
+      "Bash(.venv/Scripts/python.exe -c \"import statsmodels; import sklearn; from sklearn.inspection import PartialDependenceDisplay; from sklearn.feature_selection import mutual_info_regression; print\\('ok', statsmodels.__version__, sklearn.__version__\\)\")",
+      "Bash(.venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\edit_eda.py\")",
+      "Bash(.venv/Scripts/python.exe -c \"import jupyter_client, nbconvert, nbclient; print\\('ok'\\)\")",
+      "Bash(.venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\run_partial.py\")",
+      "Bash(python3 -c ' *)",
+      "Bash(rm -f .claude/eda_dump.txt)",
+      "Bash(rmdir .claude)",
+      "Bash(iconv -f utf-8 -t utf-8)",
+      "Bash(PYTHONIOENCODING=utf-8 python3 -c ' *)",
+      "Bash(PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\ablation.py\")",
+      "Bash(.venv/Scripts/python.exe -c ' *)",
+      "Bash(PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe -c ' *)",
+      "Bash(.venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\edit_fe.py\")",
+      "Bash(PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\run_full.py\" fe_abl_e fe_abl_y fe_redund c20 c24 c31)",
+      "Bash(PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\run_full.py\" fe_redund)",
+      "Bash(PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe scripts/bootstrap_models.py)",
+      "Bash(PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe -W ignore -c ' *)"
+    ],
+    "additionalDirectories": [
+      "C:\\.GitHubJFF\\checkpoint5_leandro\\.claude"
     ]
   }
 }

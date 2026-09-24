@@ -84,6 +84,11 @@ LIMITE_VIBRACAO_CRITICO = 6.0     # mm/s
 LIMITE_SENSOR_HEALTH = 0.70       # abaixo disso, leitura pouco confiável
 LIMITE_IDADE_CATALISADOR = 400    # dias
 
+# Limiar de regime do equipamento, DERIVADO DOS DADOS (EDA H1): com vibração
+# acima dele o Sensor_Health_Index cai de U(0,70–1,00) para U(0,56–0,80).
+# Contaminação cruzada entre regimes = 0 exatamente em 6,5 mm/s.
+LIMIAR_VIBRACAO_REGIME = 6.5      # mm/s
+
 # Limites operacionais das variáveis de decisão.
 # Estratégia recomendada: NÃO inventar — derivar dos percentis 5/95 dos dados
 # históricos (ver src/features.py::limites_operacionais) para que o otimizador

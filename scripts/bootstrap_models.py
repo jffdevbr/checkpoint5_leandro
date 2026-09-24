@@ -23,7 +23,7 @@ from sklearn.preprocessing import StandardScaler
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import src.config as cfg
-from src.features import FEATURES_ENERGIA as FEATURES
+from src.features import FEATURES_BASELINE as FEATURES
 from src.features import build_features, limites_operacionais
 
 

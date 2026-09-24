@@ -116,7 +116,7 @@ class MaintenanceIn(BaseModel):
 # =================================================================== núcleo
 def montar_X(x: list[float], ctx: Contexto) -> pd.DataFrame:
     """Reproduz EXATAMENTE o feature engineering do notebook (seção 3)."""
-    feats = ART.meta.get("features") or features.FEATURES_ENERGIA
+    feats = ART.meta.get("features") or features.FEATURES_BASELINE
     return features.montar_X(x, ctx.model_dump(), feats)
 
 
