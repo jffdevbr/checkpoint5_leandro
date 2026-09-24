@@ -55,11 +55,27 @@ Detalhes em [01_entendimento_negocio.md](01_entendimento_negocio.md) e [02_dicio
 
 **Target leakage.** Descobrimos que `Energy_Intensity = (3,6·Electricity + 0,035·Gas) / Yield` exatamente (R² = 1,0). Usar o consumo como feature dá R² = **0,999**, mas o modelo não serve para otimizar: para prever a energia, ele já precisaria conhecer a energia. Sem leakage, o R² honesto é **0,711**, praticamente igual ao teto teórico (0,713).
 
-**Feature engineering.** Usamos poucas features, e cada uma tem motivo:
+**Os dois modelos:**
 
-- `log_Flow` e `log_Health`: no modelo log-log, o coeficiente é a elasticidade;
-- `Catalyst_Age_Days`: afeta o consumo de gás;
-- `Vib_Degradado`: indica vibração acima de 6,5 mm/s.
+- **Ridge log-log:** uma regressão linear com logaritmo na entrada e na saída. Cada coeficiente é uma **elasticidade**: "+1% nesta variável → +b% no target". A parte **Ridge** acrescenta uma pequena penalidade (`alpha = 1`) que impede coeficientes exagerados. Ele é simples, suave e fácil de explicar. Em compensação, só capta as relações que colocamos nele.
+- **HistGradientBoosting (HGB):** um conjunto de centenas de **árvores de decisão** pequenas, treinadas em sequência. Cada árvore corrige o erro das anteriores. "Hist" quer dizer que os valores são agrupados em faixas, o que deixa o treino rápido. Ele encontra sozinho relações não lineares e interações entre variáveis. Em compensação, a previsão muda em degraus e é difícil de explicar.
+
+Os dois são do scikit-learn. O Ridge é o modelo usado no pipeline. O HGB serve de **contraprova**: se nem um modelo flexível acha sinal além do Ridge, é porque não há sinal a mais nos dados.
+
+**Features de cada modelo** (nenhum usa os consumos nem o target do outro):
+
+| Modelo | Target | Features |
+|---|---|---|
+| Ridge log-log — energia | `log(Energy_Intensity)` | `log_Flow`, `log_Health`, `Catalyst_Age_Days` |
+| Ridge log-log — yield | `log(Product_Yield_Tons)` | `log_Flow`, `log_Health` |
+| Ridge — Health (etapa A dos cenários) | `Sensor_Health_Index` | `Vib_Degradado` |
+| Ridge log-log — yield sem Health | `log(Product_Yield_Tons)` | `log_Flow`, `Vib_Degradado` |
+| HGB — energia e yield | o target original | as 8 variáveis brutas honestas: vazão, temperatura, pressão, válvula, idade do catalisador, Health, vibração, temperatura ambiente |
+
+- `log_Flow` e `log_Health`: logaritmo da vazão e do Health; no log-log, o coeficiente vira elasticidade.
+- `Catalyst_Age_Days`: catalisador mais velho consome mais gás (H2), por isso só entra no modelo de energia.
+- `Vib_Degradado`: 1 se a vibração passa de 6,5 mm/s, 0 se não. Marca o regime em que o Health cai (H1).
+- Ficaram de fora do Ridge: temperatura, pressão, válvula e ambiente, que não têm efeito (H4/H5), e planta e tipo de catalisador, que não fazem diferença (H3/H6). O HGB recebe temperatura, pressão, válvula e ambiente de propósito, para confirmar que elas não têm efeito.
 
 **Comparação (validação cruzada KFold(5); também validado com TimeSeriesSplit e holdout):**
 
@@ -84,7 +100,7 @@ Detalhes em [01_entendimento_negocio.md](01_entendimento_negocio.md) e [02_dicio
 3. **Formulação:** vira um problema linear, que cabe no `linprog`.
 4. **Interpretação:** o coeficiente é lido direto pelo operador. Por exemplo, +10% de vazão dá ≈ −9% de intensidade energética e +10% de produção.
 
-O HGB continua no pipeline como **verificação cruzada**. Se os dois modelos divergirem, a solução fica suspeita.
+O HGB (HistGradientBoosting) continua no pipeline como **verificação cruzada**. Se os dois modelos divergirem, a solução fica suspeita.
 
 ---
 
