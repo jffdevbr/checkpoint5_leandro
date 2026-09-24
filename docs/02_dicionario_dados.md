@@ -18,8 +18,8 @@
 | 12 | `Natural_Gas_m3h` | float | Consumo de gás natural | m³/h | 3012,5 – 5180,9 | Consumo de energia (usar com cautela — ver alerta de leakage) |
 | 13 | `Steam_Tons_h` | float | Consumo/geração de vapor | t/h | 40,0 – 90,0 | Consumo de energia (usar com cautela — ver alerta de leakage) |
 | 14 | `Ambient_Temp_C` | float | Temperatura ambiente no momento da leitura | °C | -10,0 – 52,0 | Variável externa (não controlável) |
-| 15 | `Product_Yield_Tons` | float | Produção de produto obtida | toneladas | 40,6 – 134,0 | **Target 1** |
-| 16 | `Energy_Intensity` | float | Intensidade energética do processo (energia consumida por unidade produzida) | energia/tonelada | 1,33 – 6,39 | **Target 2** — provável métrica derivada (ver alerta de leakage) |
+| 15 | `Product_Yield_Tons` | float | Produção de produto obtida | toneladas | 40,6 – 134,0 | **Target 1** — identidade exata confirmada, ver alerta de leakage |
+| 16 | `Energy_Intensity` | float | Intensidade energética do processo (energia consumida por unidade produzida) | energia/tonelada | 1,33 – 6,39 | **Target 2** — métrica derivada (confirmado, ver alerta de leakage) |
 
 ## Qualidade dos dados
 
@@ -50,6 +50,20 @@
 
 (Demais variáveis têm correlação próxima de zero com ambos os targets.)
 
-## Alerta de target leakage
+## Alerta de target leakage — identidades confirmadas
 
-Ver seção 1.5 de [`01_entendimento_negocio.md`](01_entendimento_negocio.md): `Energy_Intensity` parece ser calculada como consumo de energia (`Electricity_MWh`, possivelmente combinado com `Natural_Gas_m3h`/`Steam_Tons_h`) dividido pela produção (`Product_Yield_Tons`). Evitar usar um target como feature do outro, e revisar criticamente o uso de `Electricity_MWh`, `Natural_Gas_m3h` e `Steam_Tons_h` como preditores de `Energy_Intensity`.
+Regressão sobre os dados reais confirma, com **R² = 1,000000**, que os dois targets não são medições independentes — são calculados a partir de outras colunas do próprio dataset:
+
+```
+Energy_Intensity   = (3,6 × Electricity_MWh + 0,035 × Natural_Gas_m3h) / Product_Yield_Tons
+Product_Yield_Tons = 0,18 × Feedstock_Flow_m3h × Sensor_Health_Index
+```
+
+(`Steam_Tons_h` tem coeficiente ~0 na primeira fórmula — não entra no cálculo, apesar de estar listada como "consumo de energia").
+
+**Duas consequências:**
+
+1. **Leakage de ML:** usar `Electricity_MWh`, `Natural_Gas_m3h` ou `Product_Yield_Tons` como feature para prever `Energy_Intensity` (ou vice-versa) é circular — o R² fica artificialmente alto e o modelo não serve para otimizar uma configuração nova. Essas colunas devem ficar fora do conjunto de features de cada modelo (ver seção 4 do notebook).
+2. **Os dois targets são algebricamente acoplados:** o consumo bruto de energia (`Electricity_MWh`, `Natural_Gas_m3h`, `Steam_Tons_h`) não correlaciona com nenhuma variável operacional medida (todas as correlações abaixo de 0,09 em módulo) — comporta-se como ruído estatístico do dataset sintético, não como função da configuração da planta. Por isso, `Energy_Intensity` acaba sendo, na prática, quase só função de `Product_Yield_Tons`: só conhecer o Yield real já explica ~71% da variância de `Energy_Intensity` (usando a média fixa de energia no lugar do valor real), mais do que os modelos de ML treinados com todas as features (~68% de R²). Isso não invalida os dois modelos — cada um responde a uma pergunta de negócio diferente (`Energy_Intensity` → configuração operacional de menor custo; `Product_Yield_Tons` → sinal de necessidade de manutenção, ver seção 1.1 de [`01_entendimento_negocio.md`](01_entendimento_negocio.md)) —, mas explica por que, neste dataset, "reduzir a intensidade energética" se dá sobretudo por "aumentar a produção", e não por uma alavanca de eficiência energética independente.
+
+Investigação completa nas seções 2.1.b–2.1.f e 4 do notebook [`01_pipeline_completo.ipynb`](../notebooks/01_pipeline_completo.ipynb).
