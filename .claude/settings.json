@@ -43,7 +43,12 @@
       "Bash(.venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\edit_opt.py\")",
       "Bash(PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\run_full.py\" c29 c30 c31 c32 opt_viab opt_sens c33 c47)",
       "Bash(PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\run_full.py\" c33)",
-      "Bash(PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe -)"
+      "Bash(PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe -)",
+      "Bash(PYTHONPATH=. PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\proto_manut.py\")",
+      "Bash(PYTHONIOENCODING=utf-8 python3 -)",
+      "Bash(.venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\edit_manut.py\")",
+      "Bash(PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\run_full.py\" c36 c37 c38 manut_tabela manut_catalisador manut_recomendacao c47)",
+      "Bash(PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe \"C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c---GitHubJFF-checkpoint5-leandro\\\\a5bd8680-a4f5-4b24-9735-b2024c754e66\\\\scratchpad\\\\run_full.py\" c37 c38 manut_tabela manut_recomendacao)"
     ],
     "additionalDirectories": [
       "C:\\.GitHubJFF\\checkpoint5_leandro\\.claude"

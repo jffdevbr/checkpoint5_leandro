@@ -1,5 +1,5 @@
 {
-  "gerado_em": "2026-09-24T00:00:46",
+  "gerado_em": "2026-09-24T00:50:12",
   "features": [
     "log_Flow",
     "log_Health",
@@ -262,6 +262,386 @@
       "Product_Yield_Tons": 0.7765778071603305
     },
     "setpoints_nao_causais": "T, P e Válvula fixos na operação atual (sem efeito, H5 e 5.2)."
+  },
+  "manutencao": {
+    "ciclo_mecanico_dias": 80.0,
+    "varredura": {
+      "mecanica": {
+        "n_otimo": 28,
+        "n_indiferenca": 30,
+        "vale_a_pena": true,
+        "margem_ideal_dia": 449878.1395581347,
+        "custo_por_dia": [
+          8207.263583512162,
+          8113.359846406442,
+          8030.756312289159,
+          7950.8132592970505,
+          7873.475068771339,
+          7798.691304563545,
+          7726.416551609873,
+          7656.610269079858,
+          7589.236656294728,
+          7524.264529624721,
+          7461.667208556493,
+          7401.42240910203,
+          7343.512142660387,
+          7287.922618378012,
+          7234.644146972336,
+          7183.671043869981,
+          7135.001529406407,
+          7088.637623695366,
+          7044.585033643001,
+          7002.853029436432,
+          6963.454307688749,
+          6926.404838279879,
+          6891.723691797757,
+          6859.432844370662,
+          6829.556956579443,
+          6802.12312309246,
+          6777.160589641309,
+          6754.700434005237,
+          6734.775207787927,
+          6717.418535962235,
+          9718.410190972558,
+          12667.70123713906,
+          15566.78113310854,
+          18417.086817863863,
+          21220.004328076087,
+          23976.87024779292,
+          26688.97299938806,
+          29357.55398550228,
+          31983.80859268189,
+          34568.88706856244,
+          37113.89528571215,
+          39619.89540662238,
+          42087.90646573884,
+          44518.904885840835,
+          46913.8249474077,
+          49273.55923081376,
+          51598.95905217627,
+          53890.83491437719,
+          56149.95699512138,
+          58377.055693792645,
+          60572.82225830003,
+          62737.90951198654,
+          64872.93269901024,
+          66978.4704643659,
+          69055.06598193361,
+          71103.22824064095,
+          73123.43349508138,
+          75116.12688282767,
+          77081.72420631524,
+          79020.6138726821,
+          80933.15898045746,
+          82819.69953764498,
+          84680.55479167524,
+          86516.0256480499,
+          88326.39715137816,
+          90111.94100002601,
+          91872.91806383344,
+          93609.58087336784,
+          95322.17604899901,
+          97010.94663870177,
+          98676.13433489483,
+          100317.98154275381,
+          101936.7332752244,
+          103532.63885330223,
+          105105.95339395356,
+          106656.93907218089,
+          108185.86614809075,
+          109693.01375425456,
+          111178.6704430576,
+          112643.13449798431,
+          114086.71401679574,
+          115509.72677821072,
+          116912.4999069554,
+          118295.36935481057,
+          119658.6792175434,
+          121002.78090932238,
+          122328.03221738106,
+          123634.79626032221,
+          124923.44037355931,
+          126194.33494502149,
+          127447.85222342768
+        ]
+      },
+      "combinada": {
+        "n_otimo": 28,
+        "n_indiferenca": 30,
+        "vale_a_pena": true,
+        "margem_ideal_dia": 450976.62579607184,
+        "custo_por_dia": [
+          9703.769439972006,
+          9604.951880415378,
+          9509.078583944356,
+          9416.184848997858,
+          9326.203661135514,
+          9239.073724698916,
+          9154.739270207647,
+          9073.149878479948,
+          8994.260319501744,
+          8918.030404098157,
+          8844.424846457783,
+          8773.41313554853,
+          8704.969413423212,
+          8639.072358349047,
+          8575.705070626573,
+          8514.854958862124,
+          8456.513624355372,
+          8400.676741133851,
+          8347.343929041584,
+          8296.518617145426,
+          8248.207894582942,
+          8202.422345837113,
+          8159.1758672903525,
+          8118.485461806005,
+          8080.371007979149,
+          8044.855000663432,
+          8011.962259352964,
+          7981.719601057237,
+          7954.155474416271,
+          7929.299552006123,
+          10922.927797598357,
+          13864.98760409007,
+          16756.964889826893,
+          19600.29317881062,
+          22396.355212555558,
+          25146.484394566913,
+          27851.966076349257,
+          30514.038694661576,
+          33133.894770706946,
+          35712.681783091044,
+          38251.50292765396,
+          40751.417778645235,
+          43213.442867129634,
+          45638.55219391582,
+          48027.677695640945,
+          50381.709683839814,
+          52701.49727781699,
+          54987.848852832685,
+          57241.53252545791,
+          59463.27669785422,
+          61653.77068216092,
+          63813.66542505915,
+          65943.57435091346,
+          68044.07433965558,
+          70115.70685279142,
+          72158.97921761079,
+          74174.36607594165,
+          76162.31099967915,
+          78123.22827096289,
+          80057.50482038467,
+          81965.50231211452,
+          83847.55936048803,
+          85703.99385852576,
+          87535.1053952052,
+          89341.17773518129,
+          91122.48133217497,
+          92879.27584548091,
+          94611.8126280614,
+          96320.3371545081,
+          98005.09135777701,
+          99666.31584500155,
+          101304.2519648216,
+          102919.14370145072,
+          104511.23937404703,
+          106080.79312376142,
+          107628.06617496308,
+          109153.32786150067,
+          110656.85641328647,
+          112138.93950289866,
+          113599.87455614854,
+          115039.96883456525,
+          116459.53930141212,
+          117858.91228609439,
+          119238.42296458886,
+          120598.4146757808,
+          121939.23809530557,
+          123261.25028965954,
+          124564.81367397134,
+          125850.29489692999,
+          127118.06367599353,
+          128368.49160518596
+        ]
+      }
+    },
+    "sensibilidade_taxa_vibracao": [
+      {
+        "taxa (mm/s/dia)": 0.025,
+        "ciclo (dias)": 160,
+        "N ótimo": 49,
+        "N indiferença": 58,
+        "vale a pena": true
+      },
+      {
+        "taxa (mm/s/dia)": 0.05,
+        "ciclo (dias)": 80,
+        "N ótimo": 28,
+        "N indiferença": 30,
+        "vale a pena": true
+      },
+      {
+        "taxa (mm/s/dia)": 0.1,
+        "ciclo (dias)": 40,
+        "N ótimo": 14,
+        "N indiferença": 16,
+        "vale a pena": true
+      }
+    ],
+    "cenarios": [
+      {
+        "Cenário": "S1 — sem manutenção",
+        "Janela (d)": 80,
+        "Margem operacional": 18712770.459433917,
+        "Margem perdida na parada": 0.0,
+        "Serviço": 0.0,
+        "P(falha)": 0.8061772442,
+        "E[custo de falha]": 644941.7953436133,
+        "Dias com Y_min inviável": 52,
+        "Resultado esperado": 18067828.664090306,
+        "Resultado por dia": 225847.8583011288
+      },
+      {
+        "Cenário": "S2 — mecânica imediata",
+        "Janela (d)": 80,
+        "Margem operacional": 35962827.86494948,
+        "Margem perdida na parada": 449878.1395581347,
+        "Serviço": 120000.0,
+        "P(falha)": 0.0740995593,
+        "E[custo de falha]": 59279.6474215362,
+        "Dias com Y_min inviável": 0,
+        "Resultado esperado": 35333670.077969804,
+        "Resultado por dia": 441670.8759746226
+      },
+      {
+        "Cenário": "S2 — catalisador imediato",
+        "Janela (d)": 80,
+        "Margem operacional": 18800894.214035228,
+        "Margem perdida na parada": 224939.0697790674,
+        "Serviço": 120000.0,
+        "P(falha)": 0.8061772442,
+        "E[custo de falha]": 644941.7953436133,
+        "Dias com Y_min inviável": 52,
+        "Resultado esperado": 17811013.348912545,
+        "Resultado por dia": 222637.6668614068
+      },
+      {
+        "Cenário": "S2 — combinada imediata",
+        "Janela (d)": 80,
+        "Margem operacional": 36050986.29546766,
+        "Margem perdida na parada": 449878.1395581347,
+        "Serviço": 240000.0,
+        "P(falha)": 0.0740995593,
+        "E[custo de falha]": 59279.6474215362,
+        "Dias com Y_min inviável": 0,
+        "Resultado esperado": 35301828.508487985,
+        "Resultado por dia": 441272.8563560998
+      },
+      {
+        "Cenário": "S3 — mecânica em 28 d",
+        "Janela (d)": 108,
+        "Margem operacional": 48537354.945326425,
+        "Margem perdida na parada": 449644.0714190117,
+        "Serviço": 120000.0,
+        "P(falha)": 0.1352844051,
+        "E[custo de falha]": 108227.5240699637,
+        "Dias com Y_min inviável": 0,
+        "Resultado esperado": 47859483.34983745,
+        "Resultado por dia": 443143.3643503468
+      },
+      {
+        "Cenário": "S3 — combinada em 28 d",
+        "Janela (d)": 108,
+        "Margem operacional": 48644298.39022777,
+        "Margem perdida na parada": 449644.0714190117,
+        "Serviço": 240000.0,
+        "P(falha)": 0.1352844051,
+        "E[custo de falha]": 108227.5240699637,
+        "Dias com Y_min inviável": 0,
+        "Resultado esperado": 47846426.7947388,
+        "Resultado por dia": 443022.4703216556
+      }
+    ],
+    "t_otimo_catalisador": {
+      "isolado": {
+        "t_otimo_dias": 283.9189991407043,
+        "custo_total_troca": 341693.6903319871,
+        "k_reais_por_dia_por_dia": 8.4777,
+        "custo_medio_diario_no_otimo": 2406.9800990151484
+      },
+      "acoplado_a_mecanica": {
+        "t_otimo_dias": 168.25446530272603,
+        "custo_total_troca": 120000.0,
+        "k_reais_por_dia_por_dia": 8.4777,
+        "custo_medio_diario_no_otimo": 1426.4108804969205
+      },
+      "k_estrutural": 8.4777,
+      "k_pelo_modelo": 8.728810719097737
+    },
+    "sensibilidade_parada_catalisador": [
+      {
+        "parada da troca (h)": 0,
+        "T* isolado (d)": 168.2544653027
+      },
+      {
+        "parada da troca (h)": 6,
+        "T* isolado (d)": 233.3661963175
+      },
+      {
+        "parada da troca (h)": 12,
+        "T* isolado (d)": 283.9189991407
+      },
+      {
+        "parada da troca (h)": 24,
+        "T* isolado (d)": 364.5688289635
+      },
+      {
+        "parada da troca (h)": 36,
+        "T* isolado (d)": 430.3613179998
+      },
+      {
+        "parada da troca (h)": 48,
+        "T* isolado (d)": 487.3513075896
+      }
+    ],
+    "recomendacoes": {
+      "Estado atual": {
+        "mecanica": {
+          "fazer": true,
+          "quando_dias": 28,
+          "motivo": "Programar em 28 dias (menor custo esperado por dia); adiar além de 30 dias fica pior que fazer hoje."
+        },
+        "catalisador": {
+          "trocar": false,
+          "junto_da_mecanica": false,
+          "motivo": "Idade 128 d abaixo de T* (285 d isolado, 168 d acoplado)."
+        }
+      },
+      "Vibração 7,5 mm/s (regime degradado)": {
+        "mecanica": {
+          "fazer": true,
+          "quando_dias": 0,
+          "motivo": "R5 — produção mínima inviável na leitura atual: manutenção mecânica obrigatória."
+        },
+        "catalisador": {
+          "trocar": false,
+          "junto_da_mecanica": false,
+          "motivo": "Idade 128 d abaixo de T* (206 d isolado, 168 d acoplado)."
+        }
+      },
+      "Vibração 3 mm/s + catalisador de 300 d": {
+        "mecanica": {
+          "fazer": true,
+          "quando_dias": 71,
+          "motivo": "Programar em 71 dias (menor custo esperado por dia); adiar além de 74 dias fica pior que fazer hoje."
+        },
+        "catalisador": {
+          "trocar": true,
+          "junto_da_mecanica": false,
+          "motivo": "R6 — idade 300 d >= T* isolado de 285 d."
+        }
+      }
+    }
   },
   "metricas": [
     {
@@ -833,6 +1213,12 @@
     "custo_falha_nao_programada": 800000.0,
     "downtime_manutencao_h": 24,
     "horizonte_decisao_h": 720,
+    "vibracao_pos_manutencao": 2.5,
+    "taxa_degradacao_vibracao": 0.05,
+    "custo_troca_catalisador": 120000.0,
+    "downtime_troca_catalisador_h": 12,
+    "gas_por_dia_idade": 0.5,
+    "coef_gas_energia": 0.035,
     "limite_vibracao_alerta": 4.5,
     "limite_vibracao_critico": 6.0,
     "limite_sensor_health": 0.7,
@@ -847,6 +1233,9 @@
     "h2_gas_idade.png",
     "importancia_permutacao.png",
     "leakage_r2.png",
+    "manutencao_catalisador.png",
+    "manutencao_postergacao.png",
+    "manutencao_risco.png",
     "otimizacao_rotas.png",
     "otimizacao_sensibilidade.png"
   ]

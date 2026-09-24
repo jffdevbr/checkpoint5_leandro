@@ -84,6 +84,24 @@ CUSTO_FALHA_NAO_PROGRAMADA = 800_000.0    # quebra em operação (parada + danos
 DOWNTIME_MANUTENCAO_H = 24                # horas fora de operação
 HORIZONTE_DECISAO_H = 720                 # 30 dias — janela de avaliação
 
+# Manutenção mecânica (PREMISSAS): a vibração volta para a fronteira das zonas
+# A/B da ISO 10816 e cresce linearmente até a próxima intervenção. Os dados são
+# cross-sectional (autocorrelação ≈ 0), então a taxa NÃO é estimável deles.
+VIBRACAO_POS_MANUTENCAO = 2.5             # mm/s (P25 dos dados)
+TAXA_DEGRADACAO_VIBRACAO = 0.05           # mm/s por dia
+
+# Risco de falha mecânica em 30 dias, logística na vibração ancorada nas zonas
+# da ISO 10816: 1% na fronteira B/C (4,5 mm/s) e 30% na fronteira C/D (7,1).
+# PREMISSA — calibrar com o histórico real de falhas antes de usar em produção.
+ANCORAS_FALHA_ISO = ((4.5, 0.01), (7.1, 0.30))
+
+# Troca de catalisador (PREMISSAS). O ganho de um catalisador novo é só energia:
+# Gás = U(3000, 5000) + GAS_POR_DIA_IDADE·idade (EDA H2, derivado dos dados).
+CUSTO_TROCA_CATALISADOR = 120_000.0       # carga + serviço
+DOWNTIME_TROCA_CATALISADOR_H = 12         # parada própria; cabe dentro da parada mecânica
+GAS_POR_DIA_IDADE = 0.5                   # m³/h de gás por dia de idade (H2)
+COEF_GAS_ENERGIA = 0.035                  # peso do gás em Energy_Intensity (seção 2.1.c)
+
 # Gatilhos de condição do equipamento (regras de negócio — entrega 1)
 LIMITE_VIBRACAO_ALERTA = 4.5      # mm/s
 LIMITE_VIBRACAO_CRITICO = 6.0     # mm/s
