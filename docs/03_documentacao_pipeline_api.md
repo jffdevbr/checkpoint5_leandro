@@ -168,7 +168,7 @@ Existem dois tipos de manutenção, com lógicas diferentes:
 
 Em cada cenário a operação é **re-otimizada dia a dia** com o estado projetado. Os cenários são comparados pelo **resultado esperado por dia**, para que janelas de tamanhos diferentes fiquem comparáveis.
 
-Estado atual: vibração 5,1 mm/s, Health 0,85, catalisador com 128 dias.
+**Estado atual:** vibração 5,1 mm/s, Health 0,85, catalisador com 128 dias. Esses valores não são de uma planta específica: são a **mediana das últimas 24 leituras do dataset** (20/07 a 24/07/2024, cerca de 4 dias), que misturam as três unidades (12 de metanol, 8 de amônia e 4 de eteno). Juntar as plantas é aceitável porque a EDA mostrou que elas não se comportam como populações diferentes (H6). Usamos a mediana, e não a última leitura, porque as leituras variam muito de uma para outra: a vibração foi de 0,7 a 8,2 mm/s nesses 4 dias. Em produção, o estado viria dos sensores **da unidade** que está sendo avaliada, e a API já recebe esses valores como entrada.
 
 | Cenário | Produção | Energia | Condição | P(falha) | Resultado/dia |
 |---|---|---|---|---|---|
@@ -176,7 +176,16 @@ Estado atual: vibração 5,1 mm/s, Health 0,85, catalisador com 128 dias.
 | S2 — Mecânica imediata | 99,4 t | normal | vibração volta a 2,5 mm/s | 7% | R$ 442 mil |
 | **S3 — Mecânica em 28 dias** | 99,4 t | normal | faz a manutenção logo antes do limiar | 14% | **R$ 443 mil** |
 
-**Leitura:** postergar ~28 dias aproveita a vida útil que ainda resta, sem entrar no regime degradado. **Adiar mais de 30 dias fica pior do que fazer hoje.** Trocar o catalisador agora não compensa: a idade ótima de troca é ~284 dias (ou ~168 dias se a troca for feita junto de uma parada mecânica).
+**Leitura:** postergar ~28 dias aproveita a vida útil que ainda resta, sem entrar no regime degradado. **Adiar mais de 30 dias fica pior do que fazer hoje.**
+
+**De quanto em quanto tempo fazer a manutenção mecânica (vibração):**
+
+- **A primeira:** em ~28 dias. A vibração está em 5,1 mm/s e sobe 0,05 mm/s por dia, então passa do limite de 6,5 mm/s em (6,5 − 5,1) ÷ 0,05 ≈ 28 dias.
+- **As seguintes:** a cada **~80 dias**. Depois da manutenção, a vibração volta a 2,5 mm/s e leva (6,5 − 2,5) ÷ 0,05 = 80 dias para chegar de novo ao limite.
+- **A regra geral** é fazer a manutenção logo antes de a vibração cruzar 6,5 mm/s. O calendário fixo é só uma consequência da taxa assumida, e na prática o gatilho deve ser a **vibração medida**, não a data.
+- **Sensibilidade a essa taxa:** se a vibração subir na metade da velocidade (0,025 mm/s/dia), o ciclo passa a 160 dias; se subir no dobro (0,1), cai para 40 dias. A taxa real precisa ser medida na planta.
+
+**Catalisador:** trocar agora não compensa: a idade ótima de troca é ~284 dias (ou ~168 dias se a troca for feita junto de uma parada mecânica).
 
 **Premissas assumidas:** a vibração cresce 0,05 mm/s por dia, e o risco de falha segue as zonas da ISO 10816. O dataset não permite estimar essas duas coisas, e a sensibilidade a elas está no notebook.
 
