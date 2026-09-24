@@ -106,30 +106,56 @@ O HGB (HistGradientBoosting) continua no pipeline como **verificação cruzada**
 
 ## 3. Otimização
 
-- **Variável de decisão:** a vazão de matéria-prima `F` (`Feedstock_Flow_m3h`). T, P e válvula ficam fixas no valor atual: como não mostraram efeito nos dados (H5), qualquer valor dentro da faixa dá o mesmo resultado. Numa planta real, temperatura e pressão afetam a reação, então essa é uma característica deste dataset e não uma regra geral.
-- **Função objetivo** (margem por janela de 4 h):
+**O que é, em palavras simples.** Otimizar é deixar o computador testar, de forma inteligente, todas as combinações possíveis de ajustes da planta e escolher **a que dá o melhor resultado sem quebrar nenhuma regra**. Parece com um GPS: você diz o destino (o objetivo) e as regras (evitar pedágio, não passar de 80 km/h), e ele acha a melhor rota. Aqui:
+
+- **O que queremos:** a maior **margem**, ou seja, o que sobra da receita depois de pagar matéria-prima e energia.
+- **Regras que precisam ser respeitadas:** produzir pelo menos 80 t por janela de 4 h, sem tirar a planta da faixa em que ela já operou.
+- **O que o computador pode mexer:** os ajustes do operador.
+
+**Para que serve.** Os modelos de ML só respondem "se eu ajustar assim, o que acontece?". A otimização inverte a pergunta: **"qual ajuste devo usar?"**. É ela que transforma uma previsão numa recomendação para o operador.
+
+**O que pode ser ajustado.** Na prática, só a **vazão de matéria-prima** (`Feedstock_Flow_m3h`). Temperatura do reator, pressão do reator e abertura da válvula não mostraram efeito nos dados (H5): qualquer valor dentro da faixa dá o mesmo resultado. Por isso elas **ficam no valor atual**, sem mexer no que não traz ganho. Numa planta real, temperatura e pressão afetam a reação; essa é uma característica deste dataset, não uma regra geral.
+
+**A conta que está sendo maximizada** (margem de uma janela de 4 h):
 
 ```
-max  m(F) = p·Ŷ(F) − c_E·ÊI(F)·Ŷ(F) − 4·c_f·F
-s.a. Ŷ(F) ≥ 80 t                        (produção mínima)
-     451,9 ≤ F ≤ 648,8 m³/h             (P5–P95 do histórico)
+margem = preço do produto × produção prevista
+       − custo da energia
+       − custo da matéria-prima
+
+produção prevista      = modelo Ridge de yield           (depende da vazão e do Health)
+custo da energia       = R$ 80,74 × intensidade energética prevista × produção prevista
+custo da matéria-prima = 4 h × R$ 71,4/m³ × vazão
+
+regras:  produção prevista ≥ 80 t
+         451,9 m³/h ≤ vazão ≤ 648,8 m³/h    (faixa de 90% do histórico: percentis 5 a 95)
 ```
 
-Com o modelo log-log, `Ŷ = k·H·F` é linear em F e a energia total quase não depende de F. Então a margem é **linear**, e usamos `linprog` com o método HiGHS (Rota A, erro de linearização de 0,007%). Para conferir, rodamos SLSQP no problema não linear (Rota B) e ele chegou na mesma resposta.
+Os limites da vazão vêm do próprio histórico. Fora dessa faixa o modelo estaria "chutando", porque nunca viu a planta operar ali.
 
-**Solução:** a vazão sobe de 554,7 para **648,8 m³/h**, e o resto não muda.
+**Como o computador resolve (duas rotas, para conferir uma com a outra):**
 
-| | Atual | Ótimo |
+- **Rota A: programação linear, com `linprog` (biblioteca SciPy, método HiGHS).** Programação linear é o caso mais simples de otimização: todos os ganhos e custos são proporcionais à variável, como "cada m³/h a mais rende R$ X". Nesse caso existe um método exato e rapidíssimo para achar a melhor resposta. O nosso problema cabe aqui porque:
+  - a produção é proporcional à vazão (`produção = 0,18 × vazão × Health`);
+  - a energia total gasta na janela quase não muda com a vazão.
+  
+  Então a margem vira "ganho por m³/h × vazão". O erro dessa simplificação é de só 0,007%. HiGHS é o motor de cálculo, de código aberto, que o `linprog` usa por dentro.
+- **Rota B: SLSQP, no problema completo, sem simplificar.** SLSQP (*Sequential Least Squares Programming*, ou "programação sequencial por mínimos quadrados") é um método para problemas **não lineares** com regras. Ele parte de um ponto, olha para que lado a margem cresce, dá um passo nessa direção e repete até não conseguir melhorar mais. A cada passo, ele troca o problema difícil por uma aproximação mais simples, que dá para resolver. Serviu para confirmar que a simplificação da Rota A não mudou a resposta, e as duas chegaram ao **mesmo resultado**.
+  - Com o HGB no lugar do Ridge, o SLSQP parou antes do ótimo, em 545 m³/h. Os "degraus" das árvores enganam o método sobre a direção de melhora, e é por isso que o Ridge é o modelo usado na otimização.
+
+**Solução:** a vazão sobe de 554,7 para **648,8 m³/h**. Temperatura do reator, pressão do reator e abertura da válvula continuam como estão.
+
+| Por janela de 4 h | Atual | Ótimo |
 |---|---|---|
-| Produção (t/janela) | 84,6 | **99,0** |
+| Produção | 84,6 t | **99,0 t** |
 | Intensidade energética | 2,62 | **2,25** (−14%) |
-| Margem (R$/janela) | 60,6 mil | **73,9 mil** (+22%) |
+| Margem | R$ 60,6 mil | **R$ 73,9 mil** (+22%) |
 
 **Interpretação:**
 
-- **Por que aumentar a vazão reduz a intensidade:** a energia gasta na janela é praticamente fixa. Com mais vazão, ela é **dividida por mais toneladas**.
-- **Por que o ótimo fica no limite:** cada m³/h a mais rende R$ 141 por janela (preço-sombra da capacidade).
-- **Quando a operação sozinha não resolve:** se o Health cai abaixo de 0,685, nenhuma vazão segura entrega 80 t. A partir daí a solução passa a ser manutenção.
+- **Por que produzir mais gasta menos energia por tonelada:** a energia gasta na janela é praticamente fixa. Com mais vazão, ela é **dividida por mais toneladas**. É como um ônibus: o combustível da viagem é quase o mesmo, então quanto mais passageiros, menor o custo por passageiro.
+- **Por que a resposta é "o máximo permitido":** cada m³/h a mais rende R$ 141 de margem por janela. Esse valor se chama **preço-sombra**: quanto a margem aumentaria se o limite de vazão fosse 1 m³/h maior. Enquanto ele for positivo, vale ir até o limite. Ele também diz à engenharia quanto valeria ampliar a capacidade, se isso for seguro.
+- **Quando ajustar a operação não basta:** se o Health cai abaixo de 0,685, nenhuma vazão permitida chega a 80 t. A partir daí o problema deixa de ser de ajuste e passa a ser de **manutenção** (seção 4).
 
 ---
 
@@ -210,7 +236,7 @@ A seta de volta é o ponto principal: otimização e manutenção estão **acopl
 
 ## 8. Conclusão
 
-- **Configuração recomendada:** vazão no limite operacional (648,8 m³/h), mantendo T, P e válvula.
+- **Configuração recomendada:** vazão no limite operacional (648,8 m³/h), mantendo temperatura do reator, pressão do reator e abertura da válvula.
 - **Manutenção:** sim. A mecânica deve ser programada em ~28 dias, ou imediatamente se a vibração passar de 6,5 mm/s ou a produção mínima ficar inviável. Trocar o catalisador só a partir de ~284 dias de idade.
 - **Impacto econômico:**
   - otimização: +R$ 13,3 mil a cada 4 h, ≈ **R$ 2,4 milhões por mês**;
