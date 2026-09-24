@@ -189,6 +189,19 @@ Em cada cenário a operação é **re-otimizada dia a dia** com o estado projeta
 
 **Premissas assumidas:** a vibração cresce 0,05 mm/s por dia, e o risco de falha segue as zonas da ISO 10816. O dataset não permite estimar essas duas coisas, e a sensibilidade a elas está no notebook.
 
+**O que é a ISO 10816.** É uma norma internacional usada na indústria para avaliar se o nível de vibração de uma máquina (bombas, compressores, motores, turbinas) é aceitável. A vibração é medida na carcaça da máquina, em mm/s, e classificada em quatro zonas. Os limites dependem do porte da máquina e da base onde ela está montada. Usamos os de máquinas grandes (acima de 300 kW) em base rígida:
+
+| Zona | Vibração | Significado na norma | Uso no projeto |
+|---|---|---|---|
+| A | até ~2,3 mm/s | máquina nova ou recém-reparada | vibração após a manutenção: 2,5 mm/s (percentil 25 dos dados) |
+| B | 2,3 a 4,5 mm/s | aceitável para operar sem restrição | risco de falha baixo |
+| C | 4,5 a 7,1 mm/s | insatisfatória: operar só por tempo limitado, planejar intervenção | 4,5 mm/s = 1% de chance de falha em 30 dias |
+| D | acima de 7,1 mm/s | severa: risco de dano à máquina | 7,1 mm/s = 30% de chance de falha em 30 dias |
+
+A norma dá **as fronteiras das zonas, mas não probabilidades de falha**. Os valores de 1% e 30% são premissas do grupo, usadas para desenhar uma curva de risco que cresce com a vibração. Em produção, essa curva deve ser recalibrada com o histórico real de falhas. A ISO 10816 hoje está sendo substituída pela série **ISO 20816**, que mantém a mesma lógica de zonas.
+
+O limite de **6,5 mm/s**, que dispara a manutenção, não vem da norma. Ele vem **dos dados** (H1): é a vibração a partir da qual o Health cai e a produção despenca. Fica dentro da zona C, onde a própria norma já recomenda planejar a intervenção.
+
 ---
 
 ## 5. Automação da decisão
