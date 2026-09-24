@@ -69,6 +69,13 @@ Detalhes em [01_entendimento_negocio.md](01_entendimento_negocio.md) e [02_dicio
 | Energy | HistGradientBoosting | 0,695 | 0,345 | 9,8% |
 | Yield | **Ridge log-log** | **≈ 1,000** | 0,002 | 0,002% |
 | Yield | HistGradientBoosting | 0,999 | 0,443 | 0,39% |
+| Yield | Ridge log-log **sem Health** (cenários futuros) | 0,657 | 8,25 | 8,9% |
+
+> **Por que o yield tem R² ≈ 1?** Não é leakage. O modelo de yield também não usa os consumos nem `Energy_Intensity`. Uma versão treinada com essas colunas teve R² = 0,998, abaixo do modelo honesto, então o vazamento nem ajudaria. O R² perfeito vem de uma fórmula exata do dataset, `Yield = 0,18 × Vazão × Health`: com logaritmo, ela fica igual à forma do Ridge log-log, e o modelo reencontra a fórmula (intercepto = ln 0,18; elasticidades = 1,0). É um sinal de que os **dados são sintéticos**, não um mérito do modelo.
+>
+> **Health é leakage?** Aqui não. Ele é uma variável de estado do equipamento, medida junto com a leitura, e não é calculado a partir da produção. Mas o nome engana: ele não mede a saúde do sensor, funciona como um **fator de eficiência** que multiplica a produção. Numa planta real, se esse índice fosse calculado como produção real ÷ teórica, seria leakage.
+>
+> **Desempenho realista:** o R² ≈ 1 só vale para a operação do momento, com o Health já medido. Para o futuro (cenários de manutenção), o Health é desconhecido. Por isso o pipeline primeiro estima o Health pela vibração e depois prevê a produção. Nessa situação, o yield tem **R² = 0,657** e **MAPE = 8,9%**.
 
 **Escolhido: Ridge log-log** nos dois targets, por quatro motivos:
 
