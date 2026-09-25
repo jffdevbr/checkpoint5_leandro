@@ -97,11 +97,20 @@ def montar_X(x: Sequence[float], ctx: dict[str, Any], features: Sequence[str] | 
     equipamento e as condições externas (ex.: saída de `Contexto.model_dump()`
     na API, ou o dict `CTX` no notebook).
     """
-    d: dict[str, Any] = dict(zip(cfg.CONTROLAVEIS, x))
-    d.update(ctx)
-    _derivar(d)
+    return montar_X_lote([x], ctx, features)
+
+
+def montar_X_lote(xs: Sequence[Sequence[float]], ctx: dict[str, Any],
+                  features: Sequence[str] | None = None) -> pd.DataFrame:
+    """Uma linha por vetor de decisão em `xs`, todas com o mesmo contexto."""
     cols = list(features) if features is not None else FEATURES_ENTRADA
-    return pd.DataFrame([d])[cols]
+    linhas = []
+    for x in xs:
+        d: dict[str, Any] = dict(zip(cfg.CONTROLAVEIS, x))
+        d.update(ctx)
+        _derivar(d)
+        linhas.append([d[c] for c in cols])
+    return pd.DataFrame(linhas, columns=cols)
 
 
 def limites_operacionais(df: pd.DataFrame, cols: Sequence[str], lo: float = 5, hi: float = 95) -> dict[str, tuple[float, float]]:

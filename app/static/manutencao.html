@@ -36,7 +36,7 @@
           <input type="range" id="vib" min="0" max="10" step="0.1" value="5.8"></div>
         <div class="control"><label>Ambient Temp (°C) <b id="amb-val"></b></label>
           <input type="range" id="amb" min="-20" max="45" step="1" value="20"></div>
-        <div class="control"><label>Postergação avaliada em S3 (dias) <b id="dias-val"></b></label>
+        <div class="control"><label>Dias até a manutenção em S3 <b id="dias-val"></b></label>
           <input type="range" id="dias" min="0" max="120" step="1" value="30"></div>
       </div>
     </div>
@@ -69,14 +69,15 @@ document.getElementById("avaliar").onclick = async (ev) => {
     const linhas = r.cenarios.map(c => `
       <tr class="${c.cenario === melhor ? "best" : ""}">
         <td>${c.cenario}${c.cenario === melhor ? ' <span class="badge ok">escolhido</span>' : ""}</td>
+        <td class="num">${c.janela_dias}</td>
         <td class="num">${fmt(c.producao_ton, 1)}</td>
         <td class="num">${fmt(c.energy_intensity, 3)}</td>
-        <td class="num">${brl(c.custo_energia)}</td>
         <td class="num">${fmt(c.condicao_equipamento.vibracao, 1)} / ${fmt(c.condicao_equipamento.idade_catalisador, 0)}d</td>
         <td class="num">${fmt(c.prob_falha * 100, 1)} %</td>
         <td class="num">${brl(c.custo_esperado_falha)}</td>
-        <td class="num">${brl(c.custo_manutencao)}</td>
-        <td class="num"><b>${brl(c.resultado_liquido)}</b></td>
+        <td class="num">${brl(c.custo_manutencao + c.perda_margem_parada)}</td>
+        <td class="num">${brl(c.resultado_liquido)}</td>
+        <td class="num"><b>${brl(c.resultado_por_dia)}</b></td>
       </tr>`).join("");
 
     saida.innerHTML = `
@@ -86,7 +87,7 @@ document.getElementById("avaliar").onclick = async (ev) => {
           <div class="kpi"><div class="k">Realizar manutenção?</div>
             <div class="v">${rec.realizar_manutencao ? "SIM" : "NÃO"}</div></div>
           <div class="kpi"><div class="k">Cenário</div><div class="v" style="font-size:16px">${melhor}</div></div>
-          <div class="kpi"><div class="k">Ganho vs. S1</div><div class="v">${brl(rec.ganho_vs_sem_manutencao)}</div></div>
+          <div class="kpi"><div class="k">Ganho vs. S1 (por dia)</div><div class="v">${brl(rec.ganho_por_dia_vs_sem_manutencao)}</div></div>
           <div class="kpi"><div class="k">Automação</div><div class="v">${badgeNivel(a.nivel)}</div></div>
         </div>
         <p class="hint" style="margin-top:14px">${a.descricao}</p>
@@ -99,20 +100,25 @@ document.getElementById("avaliar").onclick = async (ev) => {
 
       <div class="card">
         <h2>Comparação de cenários</h2>
-        <p class="hint">Resultado líquido = margem no horizonte − custo de manutenção − custo esperado de falha.</p>
+        <p class="hint">A operação é re-otimizada dia a dia com o estado projetado.
+          Líquido = margem na janela − parada − serviço − custo esperado de falha.
+          Como as janelas têm tamanhos diferentes, a comparação é pelo <b>líquido por dia</b>.</p>
         <table>
           <thead><tr>
-            <th>Cenário</th><th class="num">Produção (t)</th><th class="num">Energy Int.</th>
-            <th class="num">Custo energia</th><th class="num">Vib. / Idade</th><th class="num">P(falha)</th>
-            <th class="num">Custo risco</th><th class="num">Manutenção</th><th class="num">Líquido</th>
+            <th>Cenário</th><th class="num">Janela (d)</th><th class="num">Produção média (t/4 h)</th>
+            <th class="num">Energy Int.</th><th class="num">Vib. / Idade na manutenção</th><th class="num">P(falha)</th>
+            <th class="num">Custo risco</th><th class="num">Serviço + parada</th><th class="num">Líquido</th>
+            <th class="num">Líquido/dia</th>
           </tr></thead>
           <tbody>${linhas}</tbody>
         </table>
         <p class="hint" style="margin-top:14px">
           Premissas: manutenção programada ${brl(r.premissas.custo_manutencao_programada)} ·
           falha não programada ${brl(r.premissas.custo_falha_nao_programada)} ·
-          horizonte ${r.premissas.horizonte_h} h.
-          A razão entre os dois custos é o que faz o limiar ótimo de decisão <b>não</b> ser 0,5.
+          vibração sobe ${fmt(r.premissas.taxa_degradacao_vibracao, 2)} mm/s por dia e volta a
+          ${fmt(r.premissas.vibracao_pos_manutencao, 1)} mm/s após a manutenção ·
+          ciclo de ${r.premissas.ciclo_mecanico_dias} dias até cruzar ${fmt(r.premissas.limiar_vibracao_regime, 1)} mm/s.
+          S1 e S2 são avaliados em um ciclo, e S3 em N + um ciclo. Para S1, a vibração e a idade mostradas são as do fim da janela.
         </p>
       </div>`;
   } catch (e) {

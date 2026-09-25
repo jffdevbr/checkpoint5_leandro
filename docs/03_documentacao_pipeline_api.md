@@ -347,4 +347,4 @@ docker compose up --build        # API em :8000 e JupyterLab em :8888
 uvicorn app.main:app --reload
 ```
 
-> **Limitação conhecida.** O `/api/maintenance` usa uma versão simplificada dos cenários: horizonte fixo de 30 dias, e o S2 reinicia o Health em 0,98. Por isso ele pode recomendar manutenção **imediata**, enquanto a análise do notebook (seção 7) recomenda **programar em 28 dias**. A recomendação oficial é a do notebook.
+> **Como o `/api/maintenance` compara os cenários.** Ele usa a mesma função do notebook (`avaliar_cenario`, seção 7.4). A operação é re-otimizada dia a dia com o estado projetado, e os cenários são comparados pelo **resultado esperado por dia**. S1 e S2 são avaliados em um ciclo pós-manutenção (80 dias) e o S3 em N + 80 dias, onde N é o campo `dias_postergacao` (dias até a manutenção). Com o estado da seção 4 e N = 28, a API escolhe o S3 (R$ 443 mil/dia contra R$ 442 mil/dia do S2), como o notebook. A API avalia só o N informado; a varredura que encontra o N ótimo fica no notebook (seção 7.3).

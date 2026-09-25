@@ -19,7 +19,7 @@ import pandas as pd
 from scipy.optimize import linprog
 
 import src.config as cfg
-from src.features import montar_X
+from src.features import montar_X_lote
 
 
 def economia(ei: float, yd: float, vazao: float, preco_feedstock: float = cfg.PRECO_FEEDSTOCK_M3) -> dict[str, float]:
@@ -37,9 +37,10 @@ def economia(ei: float, yd: float, vazao: float, preco_feedstock: float = cfg.PR
     }
 
 
-def _prever(modelo: Any, vazao: float, fixos: Sequence[float], ctx: dict[str, Any],
-            features: Sequence[str] | None = None) -> float:
-    return float(modelo.predict(montar_X([vazao, *fixos], ctx, features))[0])
+def _prever(modelo: Any, vazoes: Sequence[float], fixos: Sequence[float], ctx: dict[str, Any],
+            features: Sequence[str] | None = None) -> np.ndarray:
+    """Previsões para várias vazões em UMA chamada (predict linha a linha domina o custo)."""
+    return modelo.predict(montar_X_lote([[f, *fixos] for f in vazoes], ctx, features))
 
 
 def taxa_falha_dia(vibracao: float) -> float:
@@ -119,11 +120,12 @@ def otimizar_lp(
     """
     lb, ub = bounds_vazao
 
-    def resultado(f: float) -> dict[str, float]:
-        return economia(_prever(modelo_energia, f, setpoints_fixos, ctx, features),
-                        _prever(modelo_yield, f, setpoints_fixos, ctx, features), f, preco_feedstock)
+    def resultados(fs: Sequence[float]) -> list[dict[str, float]]:
+        eis = _prever(modelo_energia, fs, setpoints_fixos, ctx, features)
+        yds = _prever(modelo_yield, fs, setpoints_fixos, ctx, features)
+        return [economia(float(ei), float(yd), f, preco_feedstock) for f, ei, yd in zip(fs, eis, yds)]
 
-    r_lb, r_ub, r_meio = resultado(lb), resultado(ub), resultado((lb + ub) / 2)
+    r_lb, r_ub, r_meio = resultados([lb, ub, (lb + ub) / 2])
     s_y = (r_ub["producao_ton"] - r_lb["producao_ton"]) / (ub - lb)
     s_m = (r_ub["margem"] - r_lb["margem"]) / (ub - lb)
     linear_meio = (r_lb["margem"] + r_ub["margem"]) / 2
@@ -133,7 +135,8 @@ def otimizar_lp(
                   bounds=[(lb, ub)], method="highs")
     viavel = res.status == 0
     f_otimo = float(res.x[0]) if viavel else ub
-    out = resultado(f_otimo)
+    # o ótimo do LP costuma cair num limite: reaproveita a previsão já feita
+    out = r_lb if f_otimo == lb else r_ub if f_otimo == ub else resultados([f_otimo])[0]
     return {
         "rota": "A — LP (linprog/HiGHS)",
         "sucesso": viavel,
@@ -239,16 +242,24 @@ def avaliar_cenario(ctx: dict[str, Any], tipo: str | None, dia: int | None, hori
     """
     base, dias_desde = dict(ctx), 0
     margem_total = perda_parada = hazard_acum = 0.0
+    producao_total = energia_total = custo_energia_total = 0.0
     dias_inviaveis = 0
     estado = projetar_estado(ctx, 0, modelo_health, taxa_vibracao)
+    estado_na_manutencao = None
     for t in range(horizonte_dias):
         if tipo is not None and t == dia:
+            estado_na_manutencao = estado
             margem_hora = margem_otima(estado)["margem"] / cfg.HORAS_POR_JANELA
             perda_parada = max(margem_hora, 0.0) * TIPOS_MANUTENCAO[tipo]["parada_h"]
             base, dias_desde = aplicar_manutencao(estado, tipo, modelo_health), 0
         estado = projetar_estado(base, dias_desde, modelo_health, taxa_vibracao)
         r = margem_otima(estado)
+        if t == 0:
+            operacao_inicial = r
         margem_total += r["margem"] * JANELAS_POR_DIA
+        producao_total += r["producao_ton"]
+        energia_total += r["energy_intensity"] * r["producao_ton"]
+        custo_energia_total += r["custo_energia"]
         dias_inviaveis += not r["viavel"]
         hazard_acum += taxa_falha_dia(estado["Vibration_Level_mm_s"])
         dias_desde += 1
@@ -269,6 +280,12 @@ def avaliar_cenario(ctx: dict[str, Any], tipo: str | None, dia: int | None, hori
         "resultado_liquido": margem_total - (perda_parada if feito else 0.0) - custo_servico
                              - p * cfg.CUSTO_FALHA_NAO_PROGRAMADA,
         "dias_producao_minima_inviavel": dias_inviaveis,
+        # médias por janela de 4 h ao longo do horizonte (a operação muda dia a dia)
+        "producao_media_ton": producao_total / horizonte_dias,
+        "energy_intensity_media": energia_total / producao_total,
+        "custo_energia_medio": custo_energia_total / horizonte_dias,
+        "operacao_inicial": operacao_inicial,  # LP do dia 0 (setpoints de hoje neste cenário)
+        "estado_na_manutencao": estado_na_manutencao if feito else None,
         "estado_final": estado,
     }
 

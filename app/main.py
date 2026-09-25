@@ -47,6 +47,7 @@ class Artefatos:
     def __init__(self) -> None:
         self.energy = None
         self.yield_ = None
+        self.health = None  # etapa A (Health | regime) — só os cenários de manutenção usam
         self.meta: dict[str, Any] = {}
         self.carregado = False
 
@@ -69,6 +70,8 @@ class Artefatos:
             )
         self.energy = joblib.load(pe)
         self.yield_ = joblib.load(py)
+        ph = cfg.MODELS_DIR / "model_health.pkl"
+        self.health = joblib.load(ph) if ph.exists() else None
         self.meta = json.loads(pm.read_text(encoding="utf-8"))
         self.carregado = True
 
@@ -126,10 +129,6 @@ def prever(x: list[float], ctx: Contexto) -> tuple[float, float]:
 
 def economia(ei: float, yd: float, vazao: float) -> dict[str, float]:
     return decisao.economia(ei, yd, vazao)
-
-
-def prob_falha(ctx: Contexto, horizonte_h: float = cfg.HORIZONTE_DECISAO_H) -> float:
-    return decisao.prob_falha(ctx.model_dump(), horizonte_h)
 
 
 def bounds() -> dict[str, tuple[float, float]]:
@@ -205,82 +204,84 @@ def optimize(body: OptimizeIn) -> dict[str, Any]:
 
 @app.post("/api/maintenance")
 def maintenance(body: MaintenanceIn) -> dict[str, Any]:
-    """Compara os 3 cenários e devolve a recomendação de manutenção."""
-    ART.carregar()
-    ctx = body.contexto
-    N = body.dias_postergacao
+    """Compara S1/S2/S3 (manutenção mecânica) e devolve a recomendação.
 
-    # S1 — sem manutenção: estado atual segue degradando
-    ctx_s1 = ctx.model_copy(
-        update={
-            "Catalyst_Age_Days": ctx.Catalyst_Age_Days + cfg.HORIZONTE_DECISAO_H / 24,
-            "Vibration_Level_mm_s": min(ctx.Vibration_Level_mm_s * 1.05, 20),
-        }
+    Mesmo critério da seção 7.4 do notebook: a operação é re-otimizada dia a dia
+    com o estado projetado (`decisao.avaliar_cenario`) e os cenários são comparados
+    pelo resultado esperado POR DIA. S1 e S2 são avaliados em um ciclo pós-manutenção
+    e S3 em N + ciclo, para que adiar não ganhe só por olhar uma janela mais curta.
+    """
+    ART.carregar()
+    if ART.health is None:
+        raise HTTPException(
+            status_code=503,
+            detail="models/model_health.pkl ausente. Rode a seção 12 do notebook para gerá-lo.",
+        )
+    ctx = body.contexto.model_dump()
+    N = body.dias_postergacao
+    margem_otima = decisao.criar_margem_otima(
+        ART.yield_, ART.energy, bounds()["Feedstock_Flow_m3h"], setpoints_fixos(),
+        body.producao_minima, features=ART.meta.get("features") or features.FEATURES_BASELINE,
     )
-    # S2 — manutenção imediata: catalisador novo, vibração de volta ao baseline
-    ctx_s2 = ctx.model_copy(
-        update={"Catalyst_Age_Days": 0.0, "Vibration_Level_mm_s": 2.0, "Sensor_Health_Index": 0.98}
-    )
-    # S3 — postergada N dias: degrada até lá, depois reseta
-    ctx_s3 = ctx.model_copy(
-        update={
-            "Catalyst_Age_Days": ctx.Catalyst_Age_Days + N,
-            "Vibration_Level_mm_s": min(ctx.Vibration_Level_mm_s * (1 + 0.0015 * N), 20),
-        }
-    )
+    ciclo = int(round(decisao.ciclo_mecanico_dias()))
 
     especificacoes = [
-        ("S1 — Sem manutenção", ctx_s1, 0.0, 0.0),
-        ("S2 — Manutenção imediata", ctx_s2, cfg.CUSTO_MANUTENCAO_PROGRAMADA, cfg.DOWNTIME_MANUTENCAO_H),
-        ("S3 — Manutenção postergada", ctx_s3, cfg.CUSTO_MANUTENCAO_PROGRAMADA, cfg.DOWNTIME_MANUTENCAO_H),
+        ("S1 — Sem manutenção", None, None, ciclo),
+        ("S2 — Manutenção imediata", "mecanica", 0, ciclo),
+        (f"S3 — Manutenção em {N} dias", "mecanica", N, N + ciclo),
     ]
 
     cenarios = []
-    for nome, c, custo_manut, parada in especificacoes:
-        r = otimizar(c, body.producao_minima)
-        horas_op = cfg.HORIZONTE_DECISAO_H - parada
-        p = prob_falha(c, horizonte_h=horas_op)
-        margem_horizonte = r["margem"] * horas_op / cfg.HORAS_POR_JANELA
-        custo_risco = p * cfg.CUSTO_FALHA_NAO_PROGRAMADA
+    for nome, tipo, dia, janela in especificacoes:
+        r = decisao.avaliar_cenario(ctx, tipo, dia, janela, margem_otima, ART.health, nome=nome)
+        # S2/S3: estado no dia da manutenção, antes dela; S1: estado no fim da janela
+        c = r["estado_na_manutencao"] or r["estado_final"]
         cenarios.append(
             {
                 "cenario": nome,
-                "setpoints": r["setpoints"],
-                "producao_ton": r["producao_ton"],
-                "energy_intensity": r["energy_intensity"],
-                "custo_energia": r["custo_energia"],
-                "horas_parada": parada,
-                "custo_manutencao": custo_manut,
-                "prob_falha": p,
-                "custo_esperado_falha": custo_risco,
-                "margem_horizonte": margem_horizonte,
-                "resultado_liquido": margem_horizonte - custo_manut - custo_risco,
+                "dia_manutencao": r["dia_manutencao"],
+                "janela_dias": janela,
+                "setpoints": r["operacao_inicial"]["setpoints"],
+                "producao_ton": r["producao_media_ton"],
+                "energy_intensity": r["energy_intensity_media"],
+                "custo_energia": r["custo_energia_medio"],
+                "dias_producao_minima_inviavel": r["dias_producao_minima_inviavel"],
+                "horas_parada": decisao.TIPOS_MANUTENCAO[tipo]["parada_h"] if tipo else 0.0,
+                "perda_margem_parada": r["perda_margem_parada"],
+                "custo_manutencao": r["custo_manutencao"],
+                "prob_falha": r["prob_falha"],
+                "custo_esperado_falha": r["custo_esperado_falha"],
+                "margem_horizonte": r["margem_operacional"],
+                "resultado_liquido": r["resultado_liquido"],
+                "resultado_por_dia": r["resultado_liquido"] / janela,
                 "condicao_equipamento": {
-                    "vibracao": c.Vibration_Level_mm_s,
-                    "idade_catalisador": c.Catalyst_Age_Days,
-                    "sensor_health": c.Sensor_Health_Index,
+                    "vibracao": c["Vibration_Level_mm_s"],
+                    "idade_catalisador": c["Catalyst_Age_Days"],
+                    "sensor_health": c["Sensor_Health_Index"],
                 },
             }
         )
 
-    melhor = max(cenarios, key=lambda s: s["resultado_liquido"])
-    fazer = not melhor["cenario"].startswith("S1")
-    auto = gate_automacao(ctx, melhor["setpoints"])
+    melhor = max(cenarios, key=lambda s: s["resultado_por_dia"])
+    s1 = cenarios[0]
+    auto = gate_automacao(body.contexto, melhor["setpoints"])
 
     return {
         "cenarios": cenarios,
         "recomendacao": {
             "cenario_escolhido": melhor["cenario"],
-            "realizar_manutencao": fazer,
+            "realizar_manutencao": melhor is not s1,
             "dias_postergacao_avaliados": N,
-            "ganho_vs_sem_manutencao": melhor["resultado_liquido"]
-            - next(s["resultado_liquido"] for s in cenarios if s["cenario"].startswith("S1")),
+            "ganho_por_dia_vs_sem_manutencao": melhor["resultado_por_dia"] - s1["resultado_por_dia"],
         },
         "automacao": auto,
         "premissas": {
             "custo_manutencao_programada": cfg.CUSTO_MANUTENCAO_PROGRAMADA,
             "custo_falha_nao_programada": cfg.CUSTO_FALHA_NAO_PROGRAMADA,
-            "horizonte_h": cfg.HORIZONTE_DECISAO_H,
+            "ciclo_mecanico_dias": ciclo,
+            "taxa_degradacao_vibracao": cfg.TAXA_DEGRADACAO_VIBRACAO,
+            "limiar_vibracao_regime": cfg.LIMIAR_VIBRACAO_REGIME,
+            "vibracao_pos_manutencao": cfg.VIBRACAO_POS_MANUTENCAO,
         },
     }
 
