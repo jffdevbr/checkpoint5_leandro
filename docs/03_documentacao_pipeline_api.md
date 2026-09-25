@@ -271,19 +271,28 @@ A seta de volta é o ponto principal: otimização e manutenção estão **acopl
 
 ## 7. Resultado final
 
-| Item | Valor |
-|---|---|
-| Feedstock Flow | **648,8 m³/h** (antes 554,7) |
-| Reactor Temperature | 826,8 °C (mantida) |
-| Reactor Pressure | 31,9 bar (mantida) |
-| Valve Opening | 48,7 % (mantida) |
-| Expected Yield | 99,0 t por janela de 4 h |
-| Energy Intensity | 2,25 |
-| Energy Cost | R$ 17,96 mil por janela |
-| Maintenance | **Sim**: mecânica programada em 28 dias; catalisador não |
-| Maintenance Cost | R$ 120 mil de serviço + ~R$ 450 mil de margem perdida (24 h de parada) |
-| Total Cost | R$ 203,3 mil por janela (feedstock + energia) + R$ 570 mil por ciclo de manutenção |
-| Nível de automação | L2 para setpoints e L1 para manutenção (hoje L1, porque a vibração está acima de 4,5 mm/s) |
+Esta tabela reúne, numa linha só, **a decisão que o pipeline entrega ao operador**: como ajustar a planta, o que se espera de produção e custo, e se a manutenção deve ser feita. Os valores são **por janela de 4 h**, que é o intervalo de cada leitura do dataset, e comparados com a operação atual (mediana das últimas 24 leituras).
+
+| Item | Recomendado | Atual | O que significa |
+|---|---|---|---|
+| **Feedstock Flow** | **648,8 m³/h** | 554,7 | Quanta matéria-prima entra no reator por hora. É a **única mudança**: sobe até o limite da faixa histórica (percentil 95), porque cada m³/h a mais dá lucro. |
+| **Reactor Temperature** | 826,8 °C | 826,8 | Mantida: não mostrou efeito nos dados (H5), então não há motivo para mexer. |
+| **Reactor Pressure** | 31,9 bar | 31,9 | Mantida, pelo mesmo motivo. |
+| **Valve Opening** | 48,7 % | 48,7 | Mantida, pelo mesmo motivo. |
+| **Expected Yield** | **99,0 t** | 84,6 t | Produção prevista na janela: **+17%**, bem acima do mínimo exigido de 80 t. |
+| **Energy Intensity** | **2,25** | 2,62 | Energia gasta por tonelada produzida (quanto menor, melhor). A fórmula converte eletricidade e gás para uma mesma unidade de energia, provavelmente GJ. Cai **14%**, porque a mesma energia é dividida por mais toneladas. |
+| **Energy Cost** | R$ 17,96 mil | R$ 17,91 mil | Custo da energia na janela. Fica **praticamente igual** em reais, mas por tonelada cai de R$ 212 para R$ 181. |
+| **Maintenance** | **Sim** | — | Manutenção **mecânica programada para daqui a ~28 dias**, antes de a vibração passar de 6,5 mm/s, e depois a cada ~80 dias. Troca de catalisador **não** agora, só a partir de ~284 dias de idade. |
+| **Maintenance Cost** | R$ 570 mil por parada | — | R$ 120 mil de serviço + R$ 450 mil de produção perdida nas 24 h parada. Diluído no ciclo de 80 dias, dá cerca de **R$ 7 mil por dia** (R$ 1,2 mil por janela). |
+| **Total Cost** | **R$ 203,3 mil** + manutenção | R$ 176,3 mil | Matéria-prima (R$ 185,3 mil) + energia (R$ 18,0 mil) na janela. Sobe porque se produz mais, mas o **custo por tonelada cai** de R$ 2.084 para R$ 2.053. |
+| **Margem** (receita − custo) | **R$ 73,9 mil** | R$ 60,6 mil | O que sobra depois de pagar matéria-prima e energia: **+R$ 13,3 mil por janela (+22%)**, ou cerca de R$ 2,4 milhões por mês. Mesmo descontando a manutenção (~R$ 1,2 mil por janela), o ganho continua claro. |
+| **Nível de automação** | **L1** hoje | — | O sistema recomenda e um humano aprova, porque a vibração (5,1 mm/s) está acima de 4,5. Com o equipamento saudável, a vazão passaria a ser ajustada automaticamente (L2); a manutenção sempre passa por aprovação (L1). |
+
+**Como ler o resultado:**
+
+- **O custo total sobe, mas isso é bom.** Ao produzir mais, gasta-se mais matéria-prima, só que a receita cresce mais do que o custo. O número que importa é a **margem**, que sobe 22%.
+- **Duas decisões diferentes:** o ajuste de vazão vale **já**, e a manutenção entra na agenda **daqui a ~28 dias**. Sem a manutenção, a vibração passaria de 6,5 mm/s, a produção cairia para abaixo de 80 t e o ganho da otimização se perderia.
+- Todos os valores em R$ dependem das premissas de preço do grupo (ver o início do documento).
 
 ---
 
