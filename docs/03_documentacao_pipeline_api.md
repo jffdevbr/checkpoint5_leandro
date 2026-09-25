@@ -227,14 +227,30 @@ O cálculo tem quatro passos:
 | Menos intervenção manual e menos downtime não programado | **Falso negativo:** quebra (R$ 800 mil + risco de segurança), o erro mais caro |
 | Ajuste contínuo da vazão (+R$ 13 mil a cada 4 h) | Erro do modelo, sensor ruim, mudança de regime da planta |
 
-**Recomendação: automação assimétrica**, graduada pela reversibilidade de cada decisão:
+**Níveis de automação.** Os níveis L0 a L4 são uma escala de **quanto o sistema pode fazer sozinho**, parecida com os níveis de direção autônoma dos carros. Quanto maior o número, menos o humano participa:
 
-- **L2 para setpoints:** o sistema ajusta a vazão sozinho, porque a ação é reversível e barata.
-- **L1 para manutenção:** o sistema recomenda e um humano aprova, porque a ação é irreversível, cara e envolve segurança.
-- **Gate automático para L0** (humano decide tudo) quando:
-  - o Health está abaixo de 0,70;
-  - a vibração está acima do limite crítico;
-  - o ponto está fora da faixa de treino.
+| Nível | Quem faz o quê | Exemplo na planta |
+|---|---|---|
+| **L0 — Só informa** | o sistema mostra números; o humano analisa e decide tudo | painel com previsões, sem recomendação |
+| **L1 — Recomenda** | o sistema sugere a ação; **o humano aprova** antes de executar | "programar manutenção em 28 dias" aparece para o engenheiro, que aceita ou recusa |
+| **L2 — Executa o reversível** | o sistema **ajusta os setpoints sozinho**, dentro da faixa segura; manutenção continua precisando de aprovação | a vazão sobe para 648,8 m³/h sem ninguém apertar botão; o operador é avisado e pode desfazer |
+| L3 — Executa tudo | o sistema executa inclusive a manutenção; o humano só é notificado | só com longo histórico de acerto |
+| L4 — Autônomo | sem participação humana | não recomendado aqui |
+
+**Recomendação: automação assimétrica.** O nível depende de quanto custa errar e se dá para desfazer:
+
+- **L2 para os setpoints:** mudar a vazão é **reversível** (dá para voltar em minutos) e um erro custa pouco. Automatizar garante o ganho de R$ 13 mil a cada 4 h sem depender de alguém olhar o painel.
+- **L1 para a manutenção:** parar a planta é **irreversível**, custa R$ 120 mil mais cerca de R$ 450 mil de produção perdida e envolve segurança. O sistema recomenda, mas um humano aprova.
+
+**Gate de confiança: o nível muda sozinho conforme a situação.** A função `gate_automacao` verifica a cada decisão se o modelo merece confiança naquele ponto:
+
+| Situação | Nível permitido | Por quê |
+|---|---|---|
+| Health < 0,70, vibração > 6,0 mm/s (limite crítico) **ou** ajuste fora da faixa de treino | **L0** | os dados de entrada não são confiáveis, a segurança vem antes, ou o modelo estaria "chutando" |
+| Health > 0,90 **e** vibração < 4,5 mm/s | **L2** | equipamento saudável, modelo em terreno conhecido |
+| Qualquer outro caso | **L1** | zona intermediária: o sistema recomenda e o humano confirma |
+
+No estado atual (Health 0,85 e vibração 5,1 mm/s), o gate dá **L1**: o equipamento não está ruim, mas também não está saudável o bastante para o sistema agir sozinho.
 
 O nível de automação não é fixo: ele depende da **confiança do modelo naquele ponto**. Essa regra está implementada em `gate_automacao`.
 
