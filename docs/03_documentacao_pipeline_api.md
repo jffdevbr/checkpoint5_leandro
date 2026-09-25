@@ -33,6 +33,8 @@ O código de negócio fica em `src/` e é **o mesmo** no notebook e na API. O no
 | Consumo (leakage) | `Electricity_MWh`, `Natural_Gas_m3h`, `Steam_Tons_h` | consequência da operação |
 | Targets | `Energy_Intensity`, `Product_Yield_Tons` | resultado |
 
+**Setpoints.** É o nome dado ao **valor-alvo** que o operador define para cada variável controlável. O sistema de controle da planta mantém o processo nesse valor, como um termostato de ar-condicionado ou o piloto automático de velocidade de um carro. Neste projeto, os setpoints são os valores das quatro variáveis controláveis: vazão de matéria-prima, temperatura do reator, pressão do reator e abertura da válvula. Quando o documento fala em "ajustar os setpoints", quer dizer mudar esses valores. Na recomendação final, só o setpoint da vazão muda.
+
 **Restrições e regras de negócio:**
 
 - **R1:** produção ≥ 80 t por janela de 4 h (a média histórica, ou seja, "manter a produção").
